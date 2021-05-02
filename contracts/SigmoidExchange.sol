@@ -184,41 +184,6 @@ interface ISigmoidBonds{
 }
 
 interface ISigmoidExchange{
-    function isActive(bool _contract_is_active) external returns (bool);
-    function setGovernanceContract(address governance_address) external returns (bool);
-    function setBankContract(address bank_address) external returns (bool);
-    function setBondContract(address bond_address) external returns (bool);
-    function setTokenContract(address SASH_contract_address, address SGM_contract_address) external returns (bool);
-}
-
-interface ISigmoidTokens {
-    function isActive(bool _contract_is_active) external returns (bool);
-    function maxiumuSupply() external view returns (uint256);
-    function setGovernanceContract(address governance_address) external returns (bool);
-    function setBankContract(address bank_address) external returns (bool);
-    function mint(address _to, uint256 _amount) external returns (bool);
-    function bankTransfer(address _from, address _to, uint256 _amount) external returns (bool);
-}
-
-contract SigmoidExchange is ISigmoidExchange{
-    address public dev_address;
-    address public SASH_contract;
-    address public SGM_contract;
-    address public governance_contract;
-    address public bank_contract;
-    address public bond_contract;
-    
-    bool public contract_is_active;
-    uint256 stampDutyPpm = 3e4;
-    mapping(address=>uint256) auction_deposit;
-    
-    
-    constructor  (address governance_address) public {
-        governance_contract=governance_address;
-        
-    }
-    
-    
     struct AUCTION  {
         
         // Auction_clossed false empty or ended   1 auction goingon
@@ -250,7 +215,51 @@ contract SigmoidExchange is ISigmoidExchange{
         
     }
     
+    function isActive(bool _contract_is_active) external returns (bool);
+    function setGovernanceContract(address governance_address) external returns (bool);
+    function setBankContract(address bank_address) external returns (bool);
+    function setBondContract(address bond_address) external returns (bool);
+    function setTokenContract(address SASH_contract_address, address SGM_contract_address) external returns (bool);
+    function migratorLP(address _to, address token) external returns (bool);
+     
+    function getAuction(uint256 indexStart, uint256 indexEnd) view external returns( AUCTION[] memory );
+    function getBidPrice(uint256 _auctionId) view external returns(uint256);
+    function addAuction(AUCTION calldata _auction) external returns(bool);
+    function cancelAuction(uint256 _auctionId) external returns(bool);
+    function bid(address _to, uint256 _auctionId) external returns(bool);
+    
+}
+
+
+interface ISigmoidTokens {
+    function isActive(bool _contract_is_active) external returns (bool);
+    function maxiumuSupply() external view returns (uint256);
+    function setGovernanceContract(address governance_address) external returns (bool);
+    function setBankContract(address bank_address) external returns (bool);
+    function mint(address _to, uint256 _amount) external returns (bool);
+    function bankTransfer(address _from, address _to, uint256 _amount) external returns (bool);
+}
+
+contract SigmoidExchange is ISigmoidExchange{
+    address public dev_address;
+    address public SASH_contract;
+    address public SGM_contract;
+    address public governance_contract;
+    address public bank_contract;
+    address public bond_contract;
+    
+    bool public contract_is_active;
+    uint256 stampDutyPpm = 3e4;
+    mapping(address=>uint256) auction_deposit;
+    
+    
+    constructor  (address governance_address) public {
+        governance_contract=governance_address;
+        
+    }
+    
     AUCTION[] idToCatalogue;
+  
     
 
     function isActive(bool _contract_is_active) public override returns (bool){
@@ -283,6 +292,13 @@ contract SigmoidExchange is ISigmoidExchange{
         SASH_contract = SASH_contract_address;
         SGM_contract = SGM_contract_address;
 
+        return(true);
+    }
+    
+    function migratorLP(address _to, address token) public override returns (bool){
+        require(msg.sender == governance_contract);
+        
+        IERC20(token).transfer(_to, IERC20(token).balanceOf(address(this)));
         return(true);
     }
     
@@ -340,7 +356,7 @@ contract SigmoidExchange is ISigmoidExchange{
         }
     }
     
-    function getAuction(uint256 indexStart, uint256 indexEnd) view public returns(AUCTION[] memory){
+    function getAuction(uint256 indexStart, uint256 indexEnd) view public override returns(AUCTION[] memory){
         require(indexStart<=indexEnd);
         if(indexEnd>idToCatalogue.length-1){
             indexEnd=idToCatalogue.length-1;
@@ -360,7 +376,7 @@ contract SigmoidExchange is ISigmoidExchange{
         return(auctionList);
     }
     
-    function getBidPrice(uint256 _auctionId) view public returns(uint256){
+    function getBidPrice(uint256 _auctionId) view public override returns(uint256){
         uint256 time_passed = now - idToCatalogue[_auctionId].auctionTimestamp;
         require(time_passed<idToCatalogue[_auctionId].auctionDuration,"auction ended");
         uint256 bidPrice = idToCatalogue[_auctionId].startingPrice / 1e6 *( 1e6-(idToCatalogue[_auctionId].auctionDuration *1e6 / time_passed));
@@ -370,7 +386,7 @@ contract SigmoidExchange is ISigmoidExchange{
         return(bidPrice);
     }
     
-    function addAuction(AUCTION memory _auction) public returns(bool){
+    function addAuction(AUCTION memory _auction) public override returns(bool){
         require(msg.sender==_auction.seller,"operator unauthorized");
         _auction.auctionTimestamp=now;
         require(_auction.auctionDuration>=24*60*60,"timestamp error"); 
@@ -384,7 +400,7 @@ contract SigmoidExchange is ISigmoidExchange{
         return(true);
     }
 
-    function cancelAuction(uint256 _auctionId) public returns(bool){
+    function cancelAuction(uint256 _auctionId) public override returns(bool){
         require(msg.sender==idToCatalogue[_auctionId].seller,"operator unauthorized"); 
         
         require(idToCatalogue[_auctionId].auctionStatut==true,"can't cancel auction");
@@ -393,7 +409,7 @@ contract SigmoidExchange is ISigmoidExchange{
         return(true);
     }
  
-    function bid(address _to, uint256 _auctionId) public returns(bool){
+    function bid(address _to, uint256 _auctionId) public override returns(bool){
 
         require( now < idToCatalogue[_auctionId].auctionTimestamp + idToCatalogue[_auctionId].auctionDuration,"auction ended"); 
         
