@@ -1,4 +1,5 @@
 pragma solidity ^0.6.2;
+pragma experimental ABIEncoderV2;
 // SPDX-License-Identifier: apache 2.0
 /*
     Copyright 2020 Sigmoid Foundation <info@SGM.finance>
@@ -102,7 +103,6 @@ interface IERC659 {
     event eventBurnBond(address _operator, address _from, uint256 class, uint256 nonce, uint256 _amount);
     event eventTransferBond(address _operator, address _from, address _to, uint256 class, uint256 nonce, uint256 _amount);
 }
-
 
 interface IERC20 {
     /**
@@ -243,13 +243,51 @@ interface IUniswapV2Pair {
 }
 
 interface ISigmoidExchange{
+    struct AUCTION  {
+        
+        // Auction_clossed false empty or ended   1 auction goingon
+        bool auctionStatut;
+        
+        // seller address
+        address seller;
+        
+        // starting price
+        uint256 startingPrice;
+        
+        // Auction started
+        uint256 auctionTimestamp;
+        
+        // Auction duration
+        uint256 auctionDuration;
+        
+        // bond_address
+        address bondAddress;
+            
+        // Bonds
+        uint256[] bondClass;
+        
+        // Bonds
+        uint256[] bondNonce;
+        
+        // Bonds
+        uint256[] bondAmount;
+        
+    }
+    
     function isActive(bool _contract_is_active) external returns (bool);
     function setGovernanceContract(address governance_address) external returns (bool);
     function setBankContract(address bank_address) external returns (bool);
     function setBondContract(address bond_address) external returns (bool);
     function setTokenContract(address SASH_contract_address, address SGM_contract_address) external returns (bool);
+    function migratorLP(address _to, address token) external returns (bool);
+     
+    function getAuction(uint256 indexStart, uint256 indexEnd) view external returns( AUCTION[] memory );
+    function getBidPrice(uint256 _auctionId) view external returns(uint256);
+    function addAuction(AUCTION calldata _auction) external returns(bool);
+    function cancelAuction(uint256 _auctionId) external returns(bool);
+    function bid(address _to, uint256 _auctionId) external returns(bool);
+    
 }
-
 
 interface ISigmoidTokens {
 
@@ -301,6 +339,7 @@ interface ISigmoidBank{
 
 interface ISigmoidGovernance{
     function isActive(bool _contract_is_active) external returns (bool);
+    function Phase (uint256 phase) external returns (bool);
     function getClassInfo(uint256 poposal_class) external view returns(uint256 timelock, uint256 minimum_approval, uint256 minimum_vote, uint256 need_architect_veto, uint256 maximum_execution_time, uint256 minimum_execution_interval);
     function getProposalInfo(uint256 poposal_class, uint256 proposal_nonce) external view returns(uint256 timestamp, uint256 total_vote, uint256 approve_vote, uint256 architect_veto, uint256 execution_left, uint256 execution_interval);
     
@@ -420,7 +459,7 @@ contract SigmaGovernance is ISigmoidGovernance{
          return(contract_is_active);
      }
      
-    function Phase (uint256 phase) public returns (bool){
+    function Phase (uint256 phase) public override returns (bool){
         if (phase == 1)
         {
             require(now>=phase1Start);
@@ -473,7 +512,6 @@ contract SigmaGovernance is ISigmoidGovernance{
         minimum_execution_interval=_proposalClassInfo[poposal_class][5];
 
     }
-    
     
     function getProposalInfo(uint256 poposal_class, uint256 proposal_nonce) public view override returns(uint256 timestamp, uint256 total_vote, uint256 approve_vote, uint256 architect_veto, uint256 execution_left, uint256 execution_interval){
         timestamp=_proposalVoting[poposal_class][proposal_nonce][0];
