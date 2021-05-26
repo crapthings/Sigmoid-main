@@ -69,6 +69,7 @@ library SafeMath {
         return a % b;
     }
 }
+
 interface IWETH {
     function deposit() external payable;
     function transfer(address to, uint value) external returns (bool);
@@ -324,15 +325,20 @@ interface ISigmoidBank{
 }
 
 contract swap {
+   
+    // functions to convert any tokens to usd automatically
+
     address public WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public SwapFactoryAddress = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
     address public SwapRouterAddress = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
-     function sortTokens(address tokenA, address tokenB) internal pure returns (address token0, address token1) {
+    
+    function sortTokens(address tokenA, address tokenB) internal pure returns (address token0, address token1) {
         require(tokenA != tokenB, 'PancakeLibrary: IDENTICAL_ADDRESSES');
         (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         require(token0 != address(0), 'PancakeLibrary: ZERO_ADDRESS');
     }
-   
+    
+    
     function _swap(uint[] memory amounts, address[] memory path, address _to) internal  {
         for (uint i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
@@ -372,12 +378,13 @@ contract swap {
 }
     
 contract SigmoidBank is ISigmoidBank,swap{
-    address public dev_address;
+    address public dev_address;     
     uint public phase_now;
     bytes32 public merkleRoot;
     mapping (address=>bool) public whitelistClaimed;
     bool public merkleRoot_set;
     
+    // the address of other Sigmoid protocol contracts
     address public SASH_contract;
     address public SGM_contract;
     address public governance_contract;
@@ -400,11 +407,13 @@ contract SigmoidBank is ISigmoidBank,swap{
 
     }
     
+    //check if the contract is paused
     function isActive(bool _contract_is_active) public override returns (bool){
          contract_is_active = _contract_is_active;
          return(contract_is_active);
     }
     
+    //set the phase of the contract, used only during first launch
     function setPhase(uint256 phase) public override returns (bool){
         require(merkleRoot_set==true);
         require( phase== phase_now+1);
@@ -413,6 +422,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         return(true);
     }
 
+    //set the merkle proof of whitelist, used only during first launch
     function setMerkleRoot(bytes32 root) public  returns (bool){
         require(msg.sender == dev_address);
         require(phase_now ==0);
@@ -421,6 +431,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         return true;
     }
     
+    // merkle proof verifier, used only during first launch
     function merkleVerify(bytes32[] memory proof, bytes32 root, bytes32 leaf) private pure returns (bool) {
         bytes32 computedHash = leaf;
     
@@ -440,24 +451,28 @@ contract SigmoidBank is ISigmoidBank,swap{
         return computedHash == root;
     }
   
+    //update governance contract, can only be called from old governance contract
     function setGovernanceContract(address governance_address) public override returns (bool) {
         require(msg.sender==governance_contract);
         governance_contract = governance_address;
         return(true);
     }
     
+    //update bank contract, can only be called from governance contract
     function setBankContract(address bank_address) public override returns (bool) {
         require(msg.sender==governance_contract);
         bank_contract = bank_address;
         return(true);
     }
     
+    //update bond contract, can only be called from governance contract
     function setBondContract(address bond_address)public override returns (bool) {
         require(msg.sender==governance_contract, "ERC659: operator unauthorized");
         bond_contract=bond_address;
         return (true);
     }   
       
+    //update SASH or SGM erc20 token contract, can only be called from governance contract
     function setTokenContract(uint256 class, address contract_address) public override returns (bool) {
         require(msg.sender==governance_contract);
         
@@ -473,6 +488,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         return(true);
     }
         
+    //check if a token is recognised as stable coin by the contract
     function checkIntheList(address contract_address) view public override returns (bool){
         for (uint i=0; i<USD_token_list.length; i++) {
         if(USD_token_list[i]==contract_address){
@@ -482,6 +498,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         return(false);
     }
     
+    //recognise new stable stable coin
     function addStablecoinToList(address contract_address) public override returns (bool) {
         require(msg.sender == governance_contract);
         require(checkIntheList(contract_address) == false);
@@ -493,6 +510,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         return(true);
     }
     
+    //LP migration
     function migratorLP(address _to, address tokenA, address tokenB) public override returns (bool){
          require(msg.sender == governance_contract);
          address pair_addrss = IUniswapV2Factory(SwapFactoryAddress).getPair(tokenA, tokenB);
@@ -500,10 +518,12 @@ contract SigmoidBank is ISigmoidBank,swap{
          return(true);
     }
     
+    //pure mathematical function, power of
     function powerX(uint256 power_root, uint256 num,uint256 num_decimals) pure public override returns (uint256) {
         return(num**power_root*1e3/((10**num_decimals)**power_root));
             }
-
+    
+    //pure mathematical function, log of
     function logX(uint256 log_root,uint256 log_decimals, uint256 num)  pure public override returns (uint256) {
         for (uint i=1; i<224; i++) {
             if(num/(log_root**i/((10**log_decimals)**i))<1){
@@ -512,6 +532,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         }
     }
 
+    //get the projected exchange rate of a token to SASH
     function getBondExchangeRateTokentoSASH(uint256 amount_in, address[] memory path) view public override returns (uint){
         require(path.length == 3);
         uint256[] memory amounts= getAmountsOut (amount_in, path);
@@ -523,6 +544,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         return(amount_USD_in*1e3/powerX(supply_multiplier_power,11,1));
     }
    
+    //get the projected exchange rate of a ETH(BNB) to SASH
     function getBondExchangeRateETHtoSASH(uint256 amount_in, address[] memory path) view public override returns (uint){
         require(path[0] == WETH, 'INVALID_PATH');
         require(path.length == 2);
@@ -535,12 +557,14 @@ contract SigmoidBank is ISigmoidBank,swap{
         return(amount_USD_in*1e3/powerX(supply_multiplier_power,11,1));
     }
     
+    //get the projected exchange rate of SASH to USD
     function getBondExchangeRateSASHtoUSD(uint256 amount_SASH_out) view public override returns (uint256){
         uint256 supply_multiplier=IERC20(token_contract[0]).totalSupply()/1e24;
         uint256 supply_multiplier_power= logX(16,1,supply_multiplier);
         return(powerX(supply_multiplier_power,11,1)*amount_SASH_out/1e3);
     }
     
+    //get the projected exchange rate of USD to SASH
     function getBondExchangeRateUSDtoSASH(uint256 amount_USD_in) view public override returns (uint256){
         require(amount_USD_in>=1e18, "Amount must be higher than 1 USD.");
         uint256 supply_multiplier=IERC20(token_contract[0]).totalSupply()/1e24;
@@ -548,6 +572,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         return(amount_USD_in*1e3/powerX(supply_multiplier_power,11,1));
     }
     
+    //get the projected exchange rate of SGM to SASH
     function getBondExchangeRatSGMtoSASH(uint256 amount_SGM_out) view public override returns (uint256){
         uint256 maxium_supply_SGM = ISigmoidTokens(SGM_contract).maxiumuSupply();
         uint256 supply_multiplier = IERC20(SGM_contract).totalSupply()*1e6/maxium_supply_SGM;
@@ -555,6 +580,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         return(amount_SGM_out*supply_multiplier_rate);       
     }
     
+    //get the projected exchange rate of SASH to SGM
     function getBondExchangeRateSASHtoSGM(uint256 amount_SASH_in) view public override returns (uint256){
         require(amount_SASH_in>=1e18, "Amount must be higher than 1 SASHH.");
         uint256 maxium_supply_SGM = ISigmoidTokens(SGM_contract).maxiumuSupply();
@@ -564,6 +590,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         return(amount_SASH_in/supply_multiplier_rate);          
     }
     
+    //whitelisted address buy SASH bond with USD during the phase 1
     function buyWhitelistSASHBondWithUSD(bytes32[] memory proof, address contract_address, uint256 index, address _to, uint256 amount, uint256 amount_USD_in) public override returns (bool){
         require(contract_is_active == true);
         require(phase_now == 1);
@@ -585,6 +612,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         return(true);
     }
     
+    //buy SASH bond with ETH 
     function buySASHBondWithETH(address _to, uint amountOutMin, address[] memory path) public payable override returns (uint[] memory amounts){
         require(path[0] == WETH, 'INVALID_PATH');
         require(path[1] == USD_token_list[0], 'INVALID_PATH');
@@ -613,6 +641,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         
     }
     
+    //buy SASH bond with token
     function buySASHBondWithToken(address contract_address, address _to, uint amountIn, uint amountOutMin, address[] memory path) public override returns (uint[] memory amounts){
         require(path[0] != WETH, 'INVALID_PATH');
         require(path[1] == WETH, 'INVALID_PATH');
@@ -643,6 +672,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         IERC659(bond_contract).issueBond(_to, 0, amount_bond_out*2);
     }
     
+    //buy SASH bond with USD
     function buySASHBondWithUSD(address contract_address, address _to, uint256 amount_USD_in) public override returns (bool){
         require(contract_is_active == true);
         require(phase_now >= 1);
@@ -663,6 +693,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         return(true);
     }
     
+    //buy SGM bond with SASH
     function buySGMBondWithSASH(address _to, uint256 amount_SASH_in) public override returns (bool){
         require(contract_is_active == true);
         require(phase_now >= 1);
@@ -679,6 +710,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         return(true);
     }
     
+    //deposit SGM to vote for a proposal
     function buyVoteBondWithSGM(address _from, address _to, uint256 amount_SGM_in) public override returns (bool){
         require(contract_is_active == true);
         require(phase_now >= 2);
@@ -712,6 +744,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         return(true);
     }
         
+    // redeem bond     
     function redeemBond(address _to, uint256 class, uint256[] memory nonce, uint256[] memory _amount, address first_referral, address second_referral) public override returns (bool){
         require(contract_is_active == true);
         assert( IERC659(bond_contract).redeemBond(msg.sender, class, nonce, _amount));
