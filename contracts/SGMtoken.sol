@@ -307,13 +307,10 @@ contract SGM is ERC20{
         governance_contract = governance_address;
     }
     
+    //governance functions, used to update, pause and set launching phases.
     function isActive(bool _contract_is_active) public returns (bool){
          contract_is_active = _contract_is_active;
          return(contract_is_active);
-     }
-         
-    function maxiumuSupply() public view returns (uint256) {
-        return(_maxiumuSupply);
     }
 
     function setGovernanceContract(address governance_address) public returns (bool) {
@@ -329,23 +326,11 @@ contract SGM is ERC20{
         return(true);
     }
     
-    function mint(address _to, uint256 _amount) public returns (bool) {
-        require(contract_is_active == true);
-        require(msg.sender==bank_contract || msg.sender==governance_contract );
-        require(_amount+_totalSupply<=_maxiumuSupply,'can not mint more SGM');
-        _mint(_to, _amount);
-        return(true);
+    //read only functions      
+    function maxiumuSupply() public view returns (uint256) {
+        return(_maxiumuSupply);
     }
-    
-    function bankTransfer(address _from, address _to, uint256 _amount) public returns (bool){
-        require(contract_is_active == true);
-        require(msg.sender==bank_contract); 
-        require(_from != address(0), "ERC20: transfer from the zero address");
-        require(_to != address(0), "ERC20: transfer to the zero address");
-        _transfer(_from, _to, _amount);
-        return(true);
-    }
-    
+
     function name() public view returns (string memory) {
         return _name;
     }
@@ -372,5 +357,24 @@ contract SGM is ERC20{
      */
     function decimals() public view returns (uint8) {
         return _decimals;
+    }
+    
+    //mint function can only be called by bank contract or governance contract, when the redemption of bonds or the claiming of allocation
+    function mint(address _to, uint256 _amount) public returns (bool) {
+        require(contract_is_active == true);
+        require(msg.sender==bank_contract || msg.sender==governance_contract );
+        require(_amount+_totalSupply<=_maxiumuSupply,'can not mint more SGM');
+        _mint(_to, _amount);
+        return(true);
+    }
+    
+    //bank transfer can only be called by bank contract or exchange contract, bank transfer don't need the approval of the sender.
+    function bankTransfer(address _from, address _to, uint256 _amount) public returns (bool){
+        require(contract_is_active == true);
+        require(msg.sender==bank_contract); 
+        require(_from != address(0), "ERC20: transfer from the zero address");
+        require(_to != address(0), "ERC20: transfer to the zero address");
+        _transfer(_from, _to, _amount);
+        return(true);
     }
 }    
