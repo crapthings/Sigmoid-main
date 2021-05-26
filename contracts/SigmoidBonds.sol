@@ -153,10 +153,10 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
     
     mapping (uint256 => address) public token_contract;
   
-    mapping (uint256 => uint256)  public last_bond_redeemed;
-    mapping (uint256 => uint256)  public _Fibonacci_number;
-    mapping (uint256 => uint256)  public _Fibonacci_epoch;
-    mapping (uint256 => uint256)  public _genesis_nonce_time;
+    mapping (uint256 => uint256)  public last_bond_redeemed; 
+    mapping (uint256 => uint256)  public _Fibonacci_number;     //controls who many kind of different bond nonce will be issued, =8 means that 8 different bonds nonce will be issued
+    mapping (uint256 => uint256)  public _Fibonacci_epoch;      //controls who much time will be needed before changing the bond nonce.
+    mapping (uint256 => uint256)  public _genesis_nonce_time;       //the timestamp of the first bond nonce issued of a bond class
 
     constructor ( address governance_address) public {
 
@@ -165,22 +165,22 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
         
         _Symbol[0]="SASH-USD";
         _Fibonacci_number[0]=8;
-        _Fibonacci_epoch[0]=8*60*60;
+        _Fibonacci_epoch[0]=24*60*60;
         _genesis_nonce_time[0]=0;
         
         _Symbol[1]="SGM-SASH";
         _Fibonacci_number[1]=8;
-        _Fibonacci_epoch[1]=1;
+        _Fibonacci_epoch[1]=24*60*60;
         _genesis_nonce_time[1]=0;
         
         _Symbol[2]="SGM,SGM";
         _Fibonacci_number[2]=8;
-        _Fibonacci_epoch[2]=1;
+        _Fibonacci_epoch[2]=24*60*60;
         _genesis_nonce_time[2]=0;
         
         _Symbol[3]="SASH,SGM";
         _Fibonacci_number[3]=8;
-        _Fibonacci_epoch[3]=1;
+        _Fibonacci_epoch[3]=24*60*60;
         _genesis_nonce_time[3]=0;
         
     }
@@ -238,26 +238,31 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
         return true;
     }   
     
+    //allows anyone to read the non-burned and non-redeemed Supply of a given class nonce and bond nonce.
     function activeSupply( uint256 class, uint256 nonce) public override view returns (uint256) {
     
        return _activeSupply[class][nonce];
     }
     
+    //allows anyone to read the redeemed Supply of a given class and bond nonce.
     function burnedSupply( uint256 class, uint256 nonce) public override view  returns (uint256) {
     
         return _burnedSupply[class][nonce];
     }
     
+    //allows anyone to read the redeemed Supply of a given class and bond nonce.
     function redeemedSupply(  uint256 class, uint256 nonce) public override view  returns (uint256) {
     
         return _redeemedSupply[class][nonce];
     }
     
+    //allows anyone to read the total supply of a given class nonce and bond nonce, this include burned and redeemed Supply 
     function totalSupply( uint256 class, uint256 nonce) public override view returns (uint256) {
     
        return _activeSupply[class][nonce]+_burnedSupply[class][nonce]+_redeemedSupply[class][nonce];
     }
     
+    //get the total active supply of a bond class
     function batchActiveSupply( uint256 class) public override view returns (uint256) {
        
        uint256 _batchActiveSupply;
@@ -268,6 +273,7 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
        return _batchActiveSupply;
     }
 
+    //get the total burned supply of a bond class
     function batchBurnedSupply( uint256 class) public override view  returns (uint256) {
     
         uint256 _batchBurnedSupply;
@@ -278,6 +284,7 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
         return _batchBurnedSupply;
     }
     
+    //get the total redeemed supply of a bond class
     function batchRedeemedSupply(  uint256 class) public override view  returns (uint256) {
     
         uint256 _batchRedeemedSupply;
@@ -288,16 +295,19 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
         return _batchRedeemedSupply;
     }
        
+    //get the total supply of a bond class   
     function batchTotalSupply( uint256 class) public override view returns (uint256) {
  
        return batchActiveSupply(class)+batchBurnedSupply(class)+batchRedeemedSupply(class);
     }
     
+    //get the balance of a bond class, a bond nonce of an address
     function balanceOf(address account, uint256 class, uint256 nonce) public override view returns (uint256){
         require(account != address(0), "ERC659: balance query for the zero address");
         return _balances[account][class][nonce];
     }
      
+    //get a list of the balances of a bond class of an address.
     function batchBalanceOf(address account, uint256 class) public override view returns(uint256[] memory){
         uint256[] memory balancesAllNonce = new uint256[](last_bond_nonce[class]);
         for (uint i = 0; i<last_bond_nonce[class]; i++) {
@@ -306,7 +316,7 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
         }
         return (balancesAllNonce);
     }
-    
+
     function getBondSymbol(uint256 class) view public override returns (string memory){
         
         return _Symbol[class]; 
@@ -322,6 +332,7 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
         info6=_info[class][nonce][6];
     }
     
+    //check if the bond is redeemable
     function bondIsRedeemable(uint256 class, uint256 nonce) public override view returns (bool){
         if(last_bond_redeemed[class] >= nonce){
             return(true);
@@ -330,8 +341,7 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
         if(uint(_info[class][nonce][1])<now){
             uint256 total_liquidity=last_activeSupply[class];
             uint256 needed_liquidity=last_activeSupply[class];
-            //uint256 available_liquidity;
-    
+ 
             for (uint i=last_bond_redeemed[class]; i<=last_bond_nonce[class]; i++) {
                 total_liquidity += _activeSupply[class][i]+_redeemedSupply[class][i];
                 }
@@ -358,9 +368,9 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
              
     }
     
+    //economise looping when check the liquidity of a bond
     function _writeLastLiquidity(uint256 class, uint256 nonce) internal returns (bool){
   
-    
         uint256 total_liquidity;
         //uint256 available_liquidity;
 
@@ -372,6 +382,7 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
         last_activeSupply[class]=total_liquidity;
     }
          
+    //if the total supply of a bond nonce is 0, this function will be called to create a new bond nonce
     function _createBond(address _to, uint256 class, uint256 nonce, uint256 _amount) private returns(bool) {
     
         if(last_bond_nonce[class]<nonce){
@@ -422,14 +433,17 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
         return(true);
     
     }
-            
-     function issueBond(address _to, uint256  class, uint256 _amount) external override returns(bool){
+    
+    //Only bank contract can call this function, the calling of this function requires a deposit from the user to the bonk contract.        
+    function issueBond(address _to, uint256  class, uint256 _amount) external override returns(bool){
         require(contract_is_active == true);
         require(msg.sender==bank_contract, "ERC659: operator unauthorized");
         require(_to != address(0), "ERC659: issue bond to the zero address");
         require(_amount >= 1*10**16, "ERC659: invalid amount");
         if(_genesis_nonce_time[class]==0){_genesis_nonce_time[class]=now-now % _Fibonacci_epoch[class];}
-        uint256  now_nonce=(now-_genesis_nonce_time[class])/_Fibonacci_epoch[class];
+        uint256 now_nonce=(now-_genesis_nonce_time[class])/_Fibonacci_epoch[class];
+        
+        //the first fibonacci numbers is to calculate the percentage and the distribution of the bond nonce. 
         uint256 FibonacciTimeEponge0=1;
         uint256 FibonacciTimeEponge1=2;
         uint256 FibonacciTimeEponge;
@@ -449,6 +463,8 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
     }
         
         amount_out_eponge=_amount*1e6/amount_out_eponge;
+        
+        //the second fibonacci numbers calculation issues bonds to user. 
         FibonacciTimeEponge=0;
         FibonacciTimeEponge0=1;
         FibonacciTimeEponge1=2;
@@ -467,6 +483,7 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
       return(true);
     }
     
+    //redeem a list of bonds. Only bank contract or the from address can call this function. only the redeemable bond nonce can be used to call this function.    
     function redeemBond(address _from, uint256 class, uint256[] calldata nonce, uint256[] calldata  _amount) external override returns(bool){
         require(contract_is_active == true);
         require(msg.sender==bank_contract || msg.sender==_from, "ERC659: operator unauthorized");
@@ -482,16 +499,16 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
             }
         }
         
-        
         return(true);
-
        
     }
     
+    //transfer a list of bonds. Only bank contract or exchange contract can call this function. 
     function transferBond(address _from, address _to, uint256[] calldata class, uint256[] calldata nonce, uint256[] calldata _amount) external override returns(bool){ 
         require(contract_is_active == true);
+        require(msg.sender==bank_contract || msg.sender==exchange_contract, "ERC659: operator unauthorized");
+        
         for (uint n=0; n<nonce.length; n++) {
-            require(msg.sender==bank_contract || msg.sender==exchange_contract, "ERC659: operator unauthorized");
             require(_balances[_from][class[n]][nonce[n]] >= _amount[n], "ERC659: not enough bond to transfer");
             require(_to!=address(0), "ERC659: cant't transfer to zero bond, use 'burnBond()' instead");
             require(_transferBond(_from, _to, class[n], nonce[n], _amount[n]));
@@ -501,6 +518,7 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
         return(true);
     }
    
+    //burn a list of bonds. Only bank contract or _from address can call this function. 
     function burnBond(address _from, uint256[] calldata class, uint256[] calldata nonce, uint256[] calldata _amount) external override returns(bool){
         require(contract_is_active == true);
         for (uint n=0; n<nonce.length; n++) {
