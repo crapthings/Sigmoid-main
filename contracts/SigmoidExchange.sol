@@ -184,9 +184,11 @@ interface ISigmoidBonds{
 }
 
 interface ISigmoidExchange{
+    
+    //customized structure
     struct AUCTION  {
         
-        // Auction_clossed false empty or ended   1 auction goingon
+        // If auction clossed =false, if ongoing =true
         bool auctionStatut;
         
         // seller address
@@ -195,13 +197,13 @@ interface ISigmoidExchange{
         // starting price
         uint256 startingPrice;
         
-        // Auction started
+        // Auction started at
         uint256 auctionTimestamp;
         
         // Auction duration
         uint256 auctionDuration;
         
-        // bond_address
+        // bond address of tge auction 
         address bondAddress;
             
         // Bonds
@@ -260,13 +262,12 @@ contract SigmoidExchange is ISigmoidExchange{
     
     AUCTION[] idToCatalogue;
   
-    
-
+    //governance functions, used to update, pause and set launching phases.
     function isActive(bool _contract_is_active) public override returns (bool){
          contract_is_active = _contract_is_active;
          return(contract_is_active);
          
-     }
+    }
      
     function setGovernanceContract(address governance_address) public override returns (bool) {
         require(msg.sender==governance_contract,"ERC659: operator unauthorized");
@@ -295,6 +296,7 @@ contract SigmoidExchange is ISigmoidExchange{
         return(true);
     }
     
+    //LP or token migration
     function migratorLP(address _to, address token) public override returns (bool){
         require(msg.sender == governance_contract);
         
@@ -356,6 +358,7 @@ contract SigmoidExchange is ISigmoidExchange{
         }
     }
     
+    //get a list of auctions
     function getAuction(uint256 indexStart, uint256 indexEnd) view public override returns(AUCTION[] memory){
         require(indexStart<=indexEnd);
         if(indexEnd>idToCatalogue.length-1){
@@ -376,6 +379,7 @@ contract SigmoidExchange is ISigmoidExchange{
         return(auctionList);
     }
     
+    //get the bid price of an ongoing auction
     function getBidPrice(uint256 _auctionId) view public override returns(uint256){
         uint256 time_passed = now - idToCatalogue[_auctionId].auctionTimestamp;
         require(time_passed<idToCatalogue[_auctionId].auctionDuration,"auction ended");
@@ -386,6 +390,7 @@ contract SigmoidExchange is ISigmoidExchange{
         return(bidPrice);
     }
     
+    //add a new auction to exchange, deposit the bonds in question into exchange contract
     function addAuction(AUCTION memory _auction) public override returns(bool){
         require(msg.sender==_auction.seller,"operator unauthorized");
         _auction.auctionTimestamp=now;
@@ -400,6 +405,7 @@ contract SigmoidExchange is ISigmoidExchange{
         return(true);
     }
 
+    //cancel an ongoing or passed auction
     function cancelAuction(uint256 _auctionId) public override returns(bool){
         require(msg.sender==idToCatalogue[_auctionId].seller,"operator unauthorized"); 
         
@@ -409,6 +415,7 @@ contract SigmoidExchange is ISigmoidExchange{
         return(true);
     }
  
+    //take bid, with the newest biding price, this function send bider's SASH directly to seller.
     function bid(address _to, uint256 _auctionId) public override returns(bool){
 
         require( now < idToCatalogue[_auctionId].auctionTimestamp + idToCatalogue[_auctionId].auctionDuration,"auction ended"); 
