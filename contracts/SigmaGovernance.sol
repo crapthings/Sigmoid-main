@@ -373,8 +373,8 @@ interface ISigmoidGovernance{
 }
 
 contract SigmaGovernance is ISigmoidGovernance{
-    address public dev_address;
-    address public CSO_address;
+    address public dev_address;     //only the dev address have the veto right
+    address public CSO_address;     //CSO addrss can pause all sigmoid protocols contract
     address public marketing_team_address;
     address public SASH_contract;
     address public SGM_contract;
@@ -388,22 +388,26 @@ contract SigmaGovernance is ISigmoidGovernance{
     
     uint256 SASH_proposal_claimed;
     uint256 SGM_proposal_claimed;
-            
+    
+    //the launching phases of sigmoid protocol
     uint256 phase1Start = 1622505600;
     uint256 phase2Start = 1625097600;
     uint256 phase3Start = 1627776000;
     uint256 phase4Start = 1630454400;
         
-        
+    //how big is the community fund is, it shows here the parts per million of the total supply of SASH or SGM
     uint256 SASH_budget_ppm = 1e5;
     uint256 SGM_budget_ppm = 1e5;
     
+    //how much SASH or SGM is distributed as allocation
     uint256 SASH_allocation_distributed_ppm;
     uint256 SGM_allocation_distributed_ppm;
     
+    //the allocation of an address, in parts per million
     mapping (address => uint256[2]) allocation_ppm;
     mapping (address => uint256[2]) allocation_minted;
     
+    //how much SASH or SGM is distributed as allocation
     uint256 SASH_total_allocation_distributed;
     uint256 SGM_total_allocation_distributed;
     
@@ -434,17 +438,17 @@ contract SigmaGovernance is ISigmoidGovernance{
         SASH_total_allocation_distributed = 85e3;
         SGM_total_allocation_distributed = 8e4;
 
-        _proposalClassInfo[0][0] = 3;//timelock
+        _proposalClassInfo[0][0] = 15*24*60*60;//timelock
         _proposalClassInfo[0][1] = 50;//minimum approval percentage needed
         _proposalClassInfo[0][3] = 1;//need arechitect approval
         _proposalClassInfo[0][4] = 1;//maximum excution time
         
-        _proposalClassInfo[1][0] = 3;//timelock
+        _proposalClassInfo[1][0] = 10*24*60*60;//timelock
         _proposalClassInfo[1][1] = 50;//minimum approval percentage needed
         _proposalClassInfo[1][3] = 1;//need arechitect approval
         _proposalClassInfo[1][4] = 1;//maximum excution time
         
-        _proposalClassInfo[2][0] = 3;//timelock
+        _proposalClassInfo[2][0] = 5*24*60*60;//timelock
         _proposalClassInfo[2][1] = 50;//minimum approval percentage needed
         _proposalClassInfo[2][3] = 0;//need arechitect approval
         _proposalClassInfo[2][4] = 120;//maximum excution time
@@ -454,11 +458,13 @@ contract SigmaGovernance is ISigmoidGovernance{
       
     }
     
+    //check is the contract is active
     function isActive(bool _contract_is_active) public override returns (bool){
          contract_is_active = _contract_is_active;
          return(contract_is_active);
      }
      
+    //set launching phase
     function Phase (uint256 phase) public override returns (bool){
         if (phase == 1)
         {
