@@ -1,18 +1,18 @@
 
 
-the erc20 token contract of Sigmoid cash
+The erc20 token contract of Sigmoid cash
 
 [SASHtoken.sol](https://github.com/Sigmoid-Protocol/Sigmoid-main/blob/main/contracts/SASHtoken.sol)
 
 
 
-the erc20 token contract of Sigmoid governance 
+The erc20 token contract of Sigmoid governance 
 
 [SGMtoken.sol](https://github.com/Sigmoid-Protocol/Sigmoid-main/blob/main/contracts/SGMtoken.sol)
 
 
 
-the governance contract of Sigmoid protocol. Every proposal need  to be converted into a smart contract. If the proposal is passed, the proposal contract will be allowed to call certain functions in governance contract. Governance contract controls also the allocation and referral system.
+The governance contract of Sigmoid protocol. Every proposal need  to be converted into a smart contract. If the proposal is passed, the proposal contract will be allowed to call certain functions in governance contract. Governance contract controls also the allocation and referral system.
 
 [SigmaGovernance.sol](https://github.com/Sigmoid-Protocol/Sigmoid-main/blob/main/contracts/SigmaGovernance.sol)
 
@@ -36,6 +36,6 @@ Bond contract controls the erc659 bonds of Sigmoid protocol. Every redemption an
 
 
 
-the DEX of erc659 bonds, bonds can be auctioned on this secondary market, using Dutch methode.
+The DEX of erc659 bonds, bonds can be auctioned on this secondary market, using Dutch methode.
 
 [SigmoidExchange.sol](https://github.com/Sigmoid-Protocol/Sigmoid-main/blob/main/contracts/SigmoidExchange.sol)
