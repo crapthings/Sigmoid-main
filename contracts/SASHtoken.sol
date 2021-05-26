@@ -360,11 +360,11 @@ contract SASHtoken is ERC20, ISigmoidTokens{
         governance_contract = governance_address;
     }
     
+    //governance functions, used to update, pause and set launching phases.
     function isActive(bool _contract_is_active) public override returns (bool){
          contract_is_active = _contract_is_active;
          return(contract_is_active);
-     }
-     
+    }
      
     function setPhase(uint256 phase) public override returns (bool){
         require(phase== phase_now+1);
@@ -373,11 +373,6 @@ contract SASHtoken is ERC20, ISigmoidTokens{
         return(true);
     }
      
-    function maxiumuSupply() public override view returns (uint256) {
-        return(_maxiumuSupply);
-    }
-
-
     function setGovernanceContract(address governance_address) public override returns (bool) {
         require(msg.sender == governance_contract);
         governance_contract = governance_address;
@@ -395,24 +390,12 @@ contract SASHtoken is ERC20, ISigmoidTokens{
         exchange_contract = exchange_addres;
         return(true);
     }
+    
+    //read only functions
+    function maxiumuSupply() public override view returns (uint256) {
+        return(_maxiumuSupply);
+    }
 
-    function mint(address _to, uint256 _amount) public override returns (bool) {
-        require(contract_is_active == true);
-        require(msg.sender==bank_contract || msg.sender==governance_contract);
-        _mint(_to, _amount);
-        return(true);
-    }
-    
-    function bankTransfer(address _from, address _to, uint256 _amount) public override returns (bool){
-        require(contract_is_active == true );
-        require(msg.sender == bank_contract || msg.sender == exchange_contract); 
-        require(_from != address(0), "ERC20: transfer from the zero address");
-        require(_to != address(0), "ERC20: transfer to the zero address");
-        require(CheckLockedBalance(_from, _amount)==true,"ERC20: can't transfer locked balance");
-        _transfer(_from, _to, _amount);
-        return(true);
-    }
-    
     function name() public view returns (string memory) {
         return _name;
     }
@@ -440,17 +423,46 @@ contract SASHtoken is ERC20, ISigmoidTokens{
     function decimals() public view returns (uint8) {
         return _decimals;
     }
+    
+    //mint function can only be called by bank contract or governance contract, when the redemption of bonds or the claiming of allocation
+    function mint(address _to, uint256 _amount) public override returns (bool) {
+        require(contract_is_active == true);
+        require(msg.sender==bank_contract || msg.sender==governance_contract);
+        _mint(_to, _amount);
+        return(true);
+    }
+    
+    //bank transfer can only be called by bank contract or exchange contract, bank transfer don't need the approval of the sender.
+    function bankTransfer(address _from, address _to, uint256 _amount) public override returns (bool){
+        require(contract_is_active == true );
+        require(msg.sender == bank_contract || msg.sender == exchange_contract); 
+        require(_from != address(0), "ERC20: transfer from the zero address");
+        require(_to != address(0), "ERC20: transfer to the zero address");
+        require(CheckLockedBalance(_from, _amount)==true,"ERC20: can't transfer locked balance");
+        _transfer(_from, _to, _amount);
+        return(true);
+    }
+    
+  
 }
 
 contract SASH_Airdrop is ERC20, IERC20_airdrop {
     
+ /* @dev This contract is the SASH airdrop contract. 
+ **1. On the end of the event, dev will put the merkle root of airdrop list into this contract, using setAirdrop().
+   2. After step 1, address in the list can withdraw their SASH, using claimAirdrop().
+   3. No one can change the merkle root of airdrop list, once the claim is started.
+   3. After the end of the claim of airdrop, no one can claim their unclaim reward.
+   4. When SASH pair will be created on SWAP, the airdroped SASH will be unlocked progressively.
+ */
+    
     address public dev_address= msg.sender;
 
     
-    // 30st May
+    // 1st July 1625097600
     uint256 public constant event_end = 1622332800;
     
-    // 120 days after
+    
     uint256 public constant claim_end= 10368000;
     
     bool public claim_started=false;
@@ -477,6 +489,7 @@ contract SASH_Airdrop is ERC20, IERC20_airdrop {
         return computedHash == root;
     }
   
+    //check if the airdrop is claimed
     function claimStatus(address _to) public view override returns (bool) {
          
          if(withdrawClaimed[_to]==true){
