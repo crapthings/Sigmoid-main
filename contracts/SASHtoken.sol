@@ -172,22 +172,15 @@ interface ISigmoidTokens {
     function setGovernanceContract(address governance_address) external returns (bool);
     function setBankContract(address bank_address) external returns (bool);
     function setExchangeContract(address exchange_addres) external returns (bool);
+    
     function mint(address _to, uint256 _amount) external returns (bool);
+    function mintAllocation(address _to, uint256 _amount) external returns (bool);
+    function mintAirdrop(address _to, uint256 _amount) external returns (bool);
+    
     function bankTransfer(address _from, address _to, uint256 _amount) external returns (bool);
 }
 
-interface IERC20_airdrop {
 
-    function merkleVerify(bytes32[] calldata proof, bytes32 root, bytes32 leaf) external pure returns (bool);
-    function time_now() external view returns (uint256);
-    function claimStatus(address _to) external view returns (bool);
-
-    function claimAirdrop(bytes32[]  calldata _proof, uint256 airdrop_index, address _to, uint256 _amount) external  returns (bool);
-    
-    function setAirdrop(bytes32 _merkleRoot, uint256 _total_airdrop) external returns (bool);
-    function startClaim() external returns (bool);
-
-}
 
 contract ERC20 is IERC20 {
     using SafeMath for uint256;
@@ -205,7 +198,7 @@ contract ERC20 is IERC20 {
      * @dev See {IERC20-totalSupply}.
      */
          
-
+    //total supply does not count airdrop or allocation 
     function totalSupply() public override view returns (uint256) {
         return _totalSupply;
     }
@@ -299,9 +292,17 @@ contract ERC20 is IERC20 {
         emit Transfer(address(0), account, amount);
     }
     
-    function _mintAirdrop(address account, uint256 amount) internal {
+    function _mintAllocation(address account, uint256 amount) internal {
         require(account != address(0), "ERC20: mint to the zero address");
 
+        _balances[account] = _balances[account].add(amount);
+        emit Transfer(address(0), account, amount);
+    }
+    
+    function _mintAirdrop(address account, uint256 amount) internal {
+        require(account != address(0), "ERC20: mint to the zero address");
+        
+        locked_balances[account]+=amount;
         _balances[account] = _balances[account].add(amount);
         emit Transfer(address(0), account, amount);
     }
@@ -341,6 +342,7 @@ contract SASHtoken is ERC20, ISigmoidTokens{
     address public bank_contract;
     address public governance_contract;
     address public exchange_contract;
+    address public airdrop_contract;
 
     bool public contract_is_active;
     
@@ -351,12 +353,13 @@ contract SASHtoken is ERC20, ISigmoidTokens{
      * these values are immutable: they can only be set once during
      * construction.
      */
-    constructor ( address governance_address ) public {
+    constructor ( address governance_address, address airdrop_address ) public {
         _name = "SASH_token";
         _symbol = "SASH";
         _decimals = 18;
         dev_address = msg.sender;
         _maxiumuSupply = 0;
+        airdrop_contract = airdrop_address;
         governance_contract = governance_address;
     }
     
@@ -424,11 +427,27 @@ contract SASHtoken is ERC20, ISigmoidTokens{
         return _decimals;
     }
     
-    //mint function can only be called by bank contract or governance contract, when the redemption of bonds or the claiming of allocation
+    //mint function can only be called from bank contract or governance contract, when the redemption of bonds or the claiming of allocation
     function mint(address _to, uint256 _amount) public override returns (bool) {
         require(contract_is_active == true);
         require(msg.sender==bank_contract || msg.sender==governance_contract);
         _mint(_to, _amount);
+        return(true);
+    }
+    
+    //mint allcation function can only be called from bank contract or governance contract, allocation and airdrop do not count in total supply
+    function mintAllocation(address _to, uint256 _amount) public override returns (bool) {
+        require(contract_is_active == true);
+        require(msg.sender==bank_contract || msg.sender==governance_contract);
+        _mintAllocation(_to, _amount);
+        return(true);
+    }
+    
+    //mint airdrop function can only be called from airdrop contract, allocation and airdrop do not count in total supply
+    function mintAirdrop(address _to, uint256 _amount) public override returns (bool) {
+        require(contract_is_active == true);
+        require(msg.sender==airdrop_contract);
+        _mintAirdrop(_to, _amount);
         return(true);
     }
     
@@ -446,95 +465,4 @@ contract SASHtoken is ERC20, ISigmoidTokens{
   
 }
 
-contract SASH_Airdrop is ERC20, IERC20_airdrop {
-    
- /* @dev This contract is the SASH airdrop contract. 
- **1. On the end of the event, dev will put the merkle root of airdrop list into this contract, using setAirdrop().
-   2. After step 1, address in the list can withdraw their SASH, using claimAirdrop().
-   3. No one can change the merkle root of airdrop list, once the claim is started.
-   3. After the end of the claim of airdrop, no one can claim their unclaim reward.
-   4. When SASH pair will be created on SWAP, the airdroped SASH will be unlocked progressively.
- */
-    
-    address public dev_address= msg.sender;
 
-    
-    // 1st July 1625097600
-    uint256 public constant event_end = 1622332800;
-    
-    
-    uint256 public constant claim_end= 10368000;
-    
-    bool public claim_started=false;
-    bool public merkleRoot_set=false;
-    bytes32 public merkleRoot;//airdrop_list_mercleRoof
-    mapping (address=>bool) public withdrawClaimed;
-  
-    function merkleVerify(bytes32[] memory proof, bytes32 root, bytes32 leaf) public pure override returns (bool) {
-        bytes32 computedHash = leaf;
-    
-        for (uint256 i = 0; i < proof.length; i++) {
-            bytes32 proofElement = proof[i];
-    
-            if (computedHash <= proofElement) {
-                // Hash(current computed hash + current element of the proof)
-                computedHash = keccak256(abi.encodePacked(computedHash, proofElement));
-            } else {
-                // Hash(current element of the proof + current computed hash)
-                computedHash = keccak256(abi.encodePacked(proofElement, computedHash));
-            }
-        }
-    
-        // Check if the computed hash (root) is equal to the provided root
-        return computedHash == root;
-    }
-  
-    //check if the airdrop is claimed
-    function claimStatus(address _to) public view override returns (bool) {
-         
-         if(withdrawClaimed[_to]==true){
-            return true;}
-            
-         return false;
-    }
-    
-    function time_now() public view override returns (uint256) {
-          return now;
-       
-    }
-    
-    // _amount is the amount of SASH Credit no need to enter decimals _amount 1  = 1 SASH
-    function claimAirdrop(bytes32[]  memory _proof, uint256 airdrop_index, address _to, uint256 _amount) public override returns (bool) {
-        require(_amount > 0,'SASH Credit Airdrop: amount must >0.');
-        require(claim_started==true,'SASH Credit Airdrop:claim not started yet.');
-        require(now<=event_end+claim_end, 'SASH Credit Airdrop: Time limit passed.');
-        bytes32 node = keccak256(abi.encodePacked(airdrop_index, _to, _amount));
-        assert(merkleVerify(_proof,merkleRoot,node)==true);
-        require(claimStatus(_to)==false, 'SASH Credit Airdrop: Drop already claimed.');
-        locked_balances[_to]+=_amount*1e18;
-        _mintAirdrop(_to, _amount * 1e18);
-        withdrawClaimed[_to]=true;
-        
-        return true;
-    }
-    
-    function setAirdrop(bytes32 _merkleRoot, uint256 _total_airdrop) public override returns (bool) {
-        require(msg.sender == dev_address,'SASH Credit Airdrop: Dev only.');
-        require(now>=event_end, 'SASH Credit Airdrop: too early.');
-        require(claim_started==false, 'SASH Credit Airdrop: already started.');
-        merkleRoot = _merkleRoot;
-        merkleRoot_set = true;
-        total_airdrop = _total_airdrop;
-        return true;
-    }
-    
-    function startClaim()public override returns (bool) {
-        require(msg.sender == dev_address,'SASH Credit Airdrop: Dev only.');
-        require(now>=event_end, 'SASH Credit Airdrop: too early.');
-        require(claim_started==false, 'SASH Credit Airdrop: Claim already started.');
-        require(merkleRoot_set==true, 'SASH Credit Airdrop: Merkle root invalid.');
-        claim_started = true; 
-        return true;
-    }
-
-    }
