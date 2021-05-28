@@ -168,7 +168,7 @@ interface ISigmoidTokens {
 
     function isActive(bool _contract_is_active) external returns (bool);
     function setPhase(uint256 phase) external returns (bool);
-    function maxiumuSupply() external view returns (uint256);
+    function maximumSupply() external view returns (uint256);
     function setGovernanceContract(address governance_address) external returns (bool);
     function setBankContract(address bank_address) external returns (bool);
     function setExchangeContract(address exchange_addres) external returns (bool);
@@ -192,7 +192,7 @@ contract ERC20 is IERC20 {
     mapping (address => uint256) public locked_balances;
     
     uint256 public _totalSupply;
-    uint256 public _maxiumuSupply;
+    uint256 public _maximumSupply;
     uint256 public total_airdrop;
     /**
      * @dev See {IERC20-totalSupply}.
@@ -358,9 +358,9 @@ contract SASHtoken is ERC20, ISigmoidTokens{
         _symbol = "SASH";
         _decimals = 18;
         dev_address = msg.sender;
-        _maxiumuSupply = 0;
-        airdrop_contract = airdrop_address;
+        _maximumSupply = 0;
         governance_contract = governance_address;
+        airdrop_contract = airdrop_address;
     }
     
     //governance functions, used to update, pause and set launching phases.
@@ -395,8 +395,8 @@ contract SASHtoken is ERC20, ISigmoidTokens{
     }
     
     //read only functions
-    function maxiumuSupply() public override view returns (uint256) {
-        return(_maxiumuSupply);
+    function maximumSupply() public override view returns (uint256) {
+        return(_maximumSupply);
     }
 
     function name() public view returns (string memory) {
