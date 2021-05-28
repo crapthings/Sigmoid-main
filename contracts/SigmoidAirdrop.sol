@@ -1,5 +1,5 @@
-pragma solidity ^0.6.2;
 
+pragma solidity ^0.6.2;
 interface IERC20 {
     /**
      * @dev Returns the amount of tokens in existence.
@@ -97,8 +97,19 @@ interface ISigmoidTokens {
     function bankTransfer(address _from, address _to, uint256 _amount) external returns (bool);
 }
 
+interface ISigmoidAirdrop{
+    function merkleVerify(bytes32[] calldata proof, bytes32 root, bytes32 leaf) external pure returns (bool);
+    
+    function claimStatus(address _to) external view returns (bool);
+    function time_now() external view returns (uint256);
+    
+    function claimAirdrop(bytes32[] calldata _proof, uint256 airdrop_index, address _to, uint256 _amount) external returns (bool);
+    function setAirdrop(address token_address, bytes32 _merkleRoot, uint256 _total_airdrop) external  returns (bool);
+    function startClaim()external returns (bool);
+    
+}
 
-contract ISigmoid_Airdrop {
+contract SigmoidAirdrop is ISigmoidAirdrop {
     
  /* @dev This contract is the Sigmoid airdrop contract. 
  **1. At the end of the event, dev will put the merkle root of airdrop list into this contract, using setAirdrop().
@@ -119,7 +130,7 @@ contract ISigmoid_Airdrop {
     bytes32 public merkleRoot;//airdrop_list_mercleRoof
     mapping (address=>bool) public withdrawClaimed;
   
-    function merkleVerify(bytes32[] memory proof, bytes32 root, bytes32 leaf) public pure  returns (bool) {
+    function merkleVerify(bytes32[] memory proof, bytes32 root, bytes32 leaf) public override pure returns (bool) {
         bytes32 computedHash = leaf;
     
         for (uint256 i = 0; i < proof.length; i++) {
@@ -139,7 +150,7 @@ contract ISigmoid_Airdrop {
     }
   
     //check if the airdrop is claimed
-    function claimStatus(address _to) public view  returns (bool) {
+    function claimStatus(address _to) public override view returns (bool) {
          
          if(withdrawClaimed[_to]==true){
             return true;}
@@ -147,13 +158,13 @@ contract ISigmoid_Airdrop {
          return false;
     }
     
-    function time_now() public view  returns (uint256) {
+    function time_now() public override view returns (uint256) {
           return now;
        
     }
     
     // _amount is the amount of Airdrop no need to enter decimals _amount 1  = 1 SASH or SGM
-    function claimAirdrop(bytes32[]  memory _proof, uint256 airdrop_index, address _to, uint256 _amount) public returns (bool) {
+    function claimAirdrop(bytes32[]  memory _proof, uint256 airdrop_index, address _to, uint256 _amount) public override returns (bool) {
         require(_amount > 0,'Sigmoid Airdrop: amount must >0.');
         require(claim_started == true,'Sigmoid Airdrop: claim not started yet.');
 
@@ -168,7 +179,7 @@ contract ISigmoid_Airdrop {
     }
     
     //At the end of the event, dev will put the merkle root of airdrop list into this contract, using setAirdrop().
-    function setAirdrop(address token_address, bytes32 _merkleRoot, uint256 _total_airdrop) public  returns (bool) {
+    function setAirdrop(address token_address, bytes32 _merkleRoot, uint256 _total_airdrop) public override returns (bool) {
         require(msg.sender == dev_address,'Sigmoid Airdrop: Dev only.');
         require(now >= event_end, 'Sigmoidt Airdrop: too early.');
         require(claim_started == false, 'Sigmoid Airdrop: already started.');
@@ -180,7 +191,7 @@ contract ISigmoid_Airdrop {
     }
     
     //start the airdrop claim
-    function startClaim()public  returns (bool) {
+    function startClaim()public override returns (bool) {
         require(msg.sender == dev_address,'Sigmoid Airdrop: Dev only.');
         require(now>=event_end, 'Sigmoid Airdrop: too early.');
         require(claim_started == false, 'Sigmoid Airdrop: Claim already started.');
