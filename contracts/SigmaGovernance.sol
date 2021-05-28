@@ -293,13 +293,20 @@ interface ISigmoidTokens {
 
     function isActive(bool _contract_is_active) external returns (bool);
     function setPhase(uint256 phase) external returns (bool);
-    function maxiumuSupply() external view returns (uint256);
+    function maximumSupply() external view returns (uint256);
     function setGovernanceContract(address governance_address) external returns (bool);
     function setBankContract(address bank_address) external returns (bool);
     function setExchangeContract(address exchange_addres) external returns (bool);
+    
+    function setAirdropedSupply(uint256 total_airdroped_supply) external returns (bool);
+    
     function mint(address _to, uint256 _amount) external returns (bool);
+    function mintAllocation(address _to, uint256 _amount) external returns (bool);
+    function mintAirdrop(address _to, uint256 _amount) external returns (bool);
+    
     function bankTransfer(address _from, address _to, uint256 _amount) external returns (bool);
 }
+
 
 interface ISigmoidBonds{
     function isActive(bool _contract_is_active) external returns (bool);
@@ -386,9 +393,6 @@ contract SigmaGovernance is ISigmoidGovernance{
     bool public initialized;
     bool public contract_is_active;
     
-    uint256 SASH_proposal_claimed;
-    uint256 SGM_proposal_claimed;
-    
     //the launching phases of sigmoid protocol
     uint256 phase1Start = 1622505600;
     uint256 phase2Start = 1625097600;
@@ -435,8 +439,8 @@ contract SigmaGovernance is ISigmoidGovernance{
         allocation_ppm[marketing_team_address][0] = 2e4;
         allocation_ppm[marketing_team_address][1] = 2e4;
         
-        SASH_total_allocation_distributed = 85e3;
-        SGM_total_allocation_distributed = 8e4;
+        SASH_allocation_distributed_ppm = 85e3;
+        SGM_allocation_distributed_ppm = 8e4;
 
         _proposalClassInfo[0][0] = 15*24*60*60;//timelock
         _proposalClassInfo[0][1] = 50;//minimum approval percentage needed
@@ -501,8 +505,8 @@ contract SigmaGovernance is ISigmoidGovernance{
     }
         
     function _mintReferralReward(address _to, uint256 SASH_amount) private returns(bool){
-        require(SASH_proposal_claimed + SASH_amount <= (IERC20(SASH_contract).totalSupply()-SASH_total_allocation_distributed) / 1e6 * (SASH_budget_ppm - SASH_allocation_distributed_ppm));
-        ISigmoidTokens(SASH_contract).mint(_to, SASH_amount);
+        require(SASH_total_allocation_distributed + SASH_amount <=IERC20(SASH_contract).totalSupply() / 1e6 * SASH_budget_ppm);
+        ISigmoidTokens(SASH_contract).mintAllocation(_to, SASH_amount);
         SASH_total_allocation_distributed += SASH_amount;
         
         return(true);
@@ -774,13 +778,12 @@ contract SigmaGovernance is ISigmoidGovernance{
         require(_proposalAddress[poposal_class][_proposalNonce[poposal_class]] == msg.sender);
         _proposalVoting[poposal_class][proposal_nonce][4] -= 1;
         
-        require(SASH_proposal_claimed + SASH_amount <=(IERC20(SASH_contract).totalSupply()-SASH_total_allocation_distributed)/ 1e6 * (SASH_budget_ppm - SASH_allocation_distributed_ppm));
-        ISigmoidTokens(SASH_contract).mint(_to, SASH_amount);
-        allocation_minted[_to][0] += SASH_amount;
+        require(SASH_total_allocation_distributed + SASH_amount <= IERC20(SASH_contract).totalSupply()/ 1e6 * SASH_budget_ppm );
+        ISigmoidTokens(SASH_contract).mintAllocation(_to, SASH_amount);
         SASH_total_allocation_distributed += SASH_amount;
         
-        require(SGM_proposal_claimed + SGM_amount <= (IERC20(SGM_contract).totalSupply()-SGM_total_allocation_distributed)/ 1e6 * (SGM_budget_ppm - SGM_allocation_distributed_ppm));
-        ISigmoidTokens(SGM_contract).mint(_to, SGM_amount);
+        require(SGM_total_allocation_distributed + SGM_amount <= IERC20(SGM_contract).totalSupply()/ 1e6 * SGM_budget_ppm);
+        ISigmoidTokens(SGM_contract).mintAllocation(_to, SGM_amount);
         SGM_total_allocation_distributed += SGM_amount;
         
         return(true);
@@ -790,13 +793,13 @@ contract SigmaGovernance is ISigmoidGovernance{
 
     function mintAllocationToken(address _to, uint256 SASH_amount, uint256 SGM_amount) public override returns(bool){
          
-        require(allocation_minted[_to][0] + SASH_amount <= (IERC20(SASH_contract).totalSupply()-SASH_total_allocation_distributed)/ 1e6 * (allocation_ppm[_to][0]));
-        ISigmoidTokens(SASH_contract).mint(_to, SASH_amount);
+        require(allocation_minted[_to][0] + SASH_amount <= IERC20(SASH_contract).totalSupply()/ 1e6 * (allocation_ppm[_to][0]));
+        ISigmoidTokens(SASH_contract).mintAllocation(_to, SASH_amount);
         allocation_minted[_to][0] += SASH_amount;
         SASH_total_allocation_distributed += SASH_amount;
         
         require(allocation_minted[_to][1] + SGM_amount <= (IERC20(SGM_contract).totalSupply()-SGM_total_allocation_distributed) / 1e6 * (allocation_ppm[_to][0]));
-        ISigmoidTokens(SGM_contract).mint(_to, SGM_amount);
+        ISigmoidTokens(SGM_contract).mintAllocation(_to, SGM_amount);
         allocation_minted[_to][1] += SGM_amount;
         SGM_total_allocation_distributed += SGM_amount;
 
@@ -815,7 +818,7 @@ contract SigmaGovernance is ISigmoidGovernance{
         
         require(SASH_allocation_distributed_ppm - allocation_ppm[_to][0] + SASH_ppm <= SASH_budget_ppm - total_referral_ppm);
         allocation_ppm[_to][0] = SASH_ppm;
-        SASH_allocation_distributed_ppm=SASH_allocation_distributed_ppm - allocation_ppm[_to][0] + SASH_ppm;
+        SASH_allocation_distributed_ppm = SASH_allocation_distributed_ppm - allocation_ppm[_to][0] + SASH_ppm;
         
         require(SGM_allocation_distributed_ppm  - allocation_ppm[_to][1] + SGM_ppm <= SGM_budget_ppm);
         allocation_ppm[_to][1] = SGM_ppm;
@@ -858,8 +861,8 @@ contract SigmaGovernance is ISigmoidGovernance{
     
     function claimReferralReward(address first_referral, address second_referral, uint256 SASH_total_amount) public override returns(bool){
         require(msg.sender == bank_contract);
-        uint256 first_referral_SGM_needed = (IERC20(SASH_contract).totalSupply()-SASH_total_allocation_distributed) /1e6 * first_referral_POS_Threshold_ppm;
-        uint256 second_referral_SGM_needed = (IERC20(SASH_contract).totalSupply()-SASH_total_allocation_distributed) /1e6 * second_referral_POS_Threshold_ppm;
+        uint256 first_referral_SGM_needed = IERC20(SASH_contract).totalSupply() /1e6 * first_referral_POS_Threshold_ppm;
+        uint256 second_referral_SGM_needed = IERC20(SASH_contract).totalSupply() /1e6 * second_referral_POS_Threshold_ppm;
         uint256 first_referral_reward_size = SASH_total_amount / 1e6 * first_referral_reward_ppm;
         uint256 first_referral_POS_reward_size = SASH_total_amount / 1e6 * first_referral_POS_reward_ppm / 1e6 * ( IERC20(SGM_contract).balanceOf(first_referral) * 1e5 / first_referral_SGM_needed);
         uint256 second_referral_reward_size = SASH_total_amount / 1e6 * second_referral_reward_ppm;
