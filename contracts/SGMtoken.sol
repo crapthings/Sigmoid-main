@@ -110,8 +110,7 @@ interface IERC20 {
      *
      * Emits a {Transfer} event.
      */
-    function LockedBalance(address account) external view returns (uint256);
-    function transfer(address recipient, uint256 amount) external returns (bool);
+     function transfer(address recipient, uint256 amount) external returns (bool);
 
     /**
      * @dev Returns the remaining number of tokens that `spender` will be
@@ -168,10 +167,20 @@ interface ISigmoidTokens {
 
     function isActive(bool _contract_is_active) external returns (bool);
     function setPhase(uint256 phase) external returns (bool);
+    
+    function name() external view returns (string memory);
+    function symbol() external view returns (string memory);
+    function decimals() external view returns (uint8);
     function maximumSupply() external view returns (uint256);
+    function AirdropedSupply() external  view returns (uint256);
+    function lockedBalance(address account) external view returns (uint256);
+    function checkLockedBalance(address account, uint256 amount) external view returns (bool);
+    
     function setGovernanceContract(address governance_address) external returns (bool);
     function setBankContract(address bank_address) external returns (bool);
     function setExchangeContract(address exchange_addres) external returns (bool);
+    
+    function setAirdropedSupply(uint256 total_airdroped_supply) external returns (bool);
     
     function mint(address _to, uint256 _amount) external returns (bool);
     function mintAllocation(address _to, uint256 _amount) external returns (bool);
@@ -211,27 +220,27 @@ contract ERC20 is IERC20 {
     }
 
     
-    function LockedBalance(address account) public override view returns (uint256){
-          if(_totalSupply / 1e6 * 15e3 >= total_airdrop){
+    function _lockedBalance(address account) internal  view returns (uint256){
+          if(_totalSupply / 1e6 * 4e4 >= total_airdrop){
              return(0);
          }
          
-         uint256 airdrop_blocked_ppm = 1e6 - (_totalSupply/1e6 * 15e3) * 1e6 / total_airdrop; 
+         uint256 airdrop_blocked_ppm = 1e6 - (_totalSupply/1e6 * 4e4) * 1e6 / total_airdrop; 
          return (locked_balances[account] / 1e6 * airdrop_blocked_ppm);
 
     }
      
-    function CheckLockedBalance(address account, uint256 amount) public view returns (bool){
+    function _checkLockedBalance(address account, uint256 amount) internal view returns (bool){
          if(amount <= balanceOf(account)- locked_balances[account]){
          return(true);
          }
          
-         //1.5% of the total supply of SASH wiill be used to payoff Airdrop
-         if(_totalSupply / 1e6 * 15e3 >= total_airdrop){
+         //4% of the total supply of SGM wiill be used to payoff Airdrop
+         if(_totalSupply / 1e6 * 4e4 >= total_airdrop){
              return(true);
          }
          
-         uint256 airdrop_blocked_ppm = 1e6 - (_totalSupply/1e6 * 15e3) * 1e6 / total_airdrop; 
+         uint256 airdrop_blocked_ppm = 1e6 - (_totalSupply/1e6 * 4e4) * 1e6 / total_airdrop; 
          if(amount <= balanceOf(account) - locked_balances[account] / 1e6 * airdrop_blocked_ppm){
              return(true);
          }
@@ -245,7 +254,7 @@ contract ERC20 is IERC20 {
     }
 
     function allowance(address owner, address spender) public override view returns (uint256) {
-         return _allowances[owner][spender];
+        return _allowances[owner][spender];
     }
 
     function approve(address spender, uint256 amount) public override returns (bool) {
@@ -272,7 +281,7 @@ contract ERC20 is IERC20 {
     function _transfer(address sender, address recipient, uint256 amount) internal {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
-        require(CheckLockedBalance(sender, amount)==true,"ERC20: can't transfer locked balance");
+        require(_checkLockedBalance(sender, amount)==true,"ERC20: can't transfer locked balance");
         _balances[sender] = _balances[sender].sub(amount, "ERC20: transfer amount exceeds balance");
         _balances[recipient] = _balances[recipient].add(amount);
         emit Transfer(sender, recipient, amount);
@@ -303,7 +312,7 @@ contract ERC20 is IERC20 {
     
     function _burn(address account, uint256 amount) internal {
         require(account != address(0), "ERC20: burn from the zero address");
-        require(CheckLockedBalance(account, amount)==true,"ERC20: can't burn locked balance");
+        require(_checkLockedBalance(account, amount)==true,"ERC20: can't burn locked balance");
         _balances[account] = _balances[account].sub(amount, "ERC20: burn amount exceeds balance");
         _totalSupply = _totalSupply.sub(amount);
         emit Transfer(account, address(0), amount);
@@ -347,11 +356,11 @@ contract SGMtoken is ERC20, ISigmoidTokens{
      * construction.
      */
     constructor ( address governance_address, address airdrop_address ) public {
-        _name = "SASH_token";
+        _name = "SGM_token";
         _symbol = "SGM";
         _decimals = 18;
         dev_address = msg.sender;
-        _maximumSupply =  1e24;
+        _maximumSupply = 1e24;
         governance_contract = governance_address;
         airdrop_contract = airdrop_address;
     }
@@ -387,12 +396,22 @@ contract SGMtoken is ERC20, ISigmoidTokens{
         return(true);
     }
     
+    function setAirdropedSupply(uint256 total_airdroped_supply) public override returns (bool){
+        require(msg.sender == airdrop_contract);
+        total_airdrop = total_airdroped_supply;
+        return(true);
+    }
+    
     //read only functions
     function maximumSupply() public override view returns (uint256) {
         return(_maximumSupply);
     }
 
-    function name() public view returns (string memory) {
+    function AirdropedSupply() public override view returns (uint256){
+        return(total_airdrop);
+    }
+    
+    function name() public override view returns (string memory) {
         return _name;
     }
 
@@ -400,7 +419,7 @@ contract SGMtoken is ERC20, ISigmoidTokens{
      * @dev Returns the symbol of the token, usually a shorter version of the
      * name.
      */
-    function symbol() public view returns (string memory) {
+    function symbol() public override view returns (string memory) {
         return _symbol;
     }
 
@@ -416,8 +435,16 @@ contract SGMtoken is ERC20, ISigmoidTokens{
      * no way affects any of the arithmetic of the contract, including
      * {IERC20-balanceOf} and {IERC20-transfer}.
      */
-    function decimals() public view returns (uint8) {
+    function decimals() public override view returns (uint8) {
         return _decimals;
+    }
+    
+    function lockedBalance(address account) public override view returns (uint256){
+         return(_lockedBalance(account));
+    }
+         
+    function checkLockedBalance(address account, uint256 amount) public override view returns (bool){
+        return(_checkLockedBalance(account, amount));
     }
     
     //mint function can only be called from bank contract or governance contract, when the redemption of bonds or the claiming of allocation
@@ -450,12 +477,9 @@ contract SGMtoken is ERC20, ISigmoidTokens{
         require(msg.sender == bank_contract || msg.sender == exchange_contract); 
         require(_from != address(0), "ERC20: transfer from the zero address");
         require(_to != address(0), "ERC20: transfer to the zero address");
-        require(CheckLockedBalance(_from, _amount)==true,"ERC20: can't transfer locked balance");
+        require(_checkLockedBalance(_from, _amount)==true,"ERC20: can't transfer locked balance");
         _transfer(_from, _to, _amount);
         return(true);
     }
-    
-  
+      
 }
-
-
