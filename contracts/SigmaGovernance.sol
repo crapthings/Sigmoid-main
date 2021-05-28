@@ -293,7 +293,15 @@ interface ISigmoidTokens {
 
     function isActive(bool _contract_is_active) external returns (bool);
     function setPhase(uint256 phase) external returns (bool);
+    
+    function name() external view returns (string memory);
+    function symbol() external view returns (string memory);
+    function decimals() external view returns (uint8);
     function maximumSupply() external view returns (uint256);
+    function AirdropedSupply() external  view returns (uint256);
+    function lockedBalance(address account) external view returns (uint256);
+    function checkLockedBalance(address account, uint256 amount) external view returns (bool);
+    
     function setGovernanceContract(address governance_address) external returns (bool);
     function setBankContract(address bank_address) external returns (bool);
     function setExchangeContract(address exchange_addres) external returns (bool);
@@ -306,7 +314,6 @@ interface ISigmoidTokens {
     
     function bankTransfer(address _from, address _to, uint256 _amount) external returns (bool);
 }
-
 
 interface ISigmoidBonds{
     function isActive(bool _contract_is_active) external returns (bool);
