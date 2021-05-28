@@ -39,3 +39,8 @@ Bond contract controls the erc659 bonds of Sigmoid protocol. Every redemption an
 The DEX of erc659 bonds, bonds can be auctioned on this secondary market, using Dutch methode.
 
 [SigmoidExchange.sol](https://github.com/Sigmoid-Protocol/Sigmoid-main/blob/main/contracts/SigmoidExchange.sol)
+
+
+SASH and SGM airdrop contract, this contract need to be deployed twice with diffrent airdrop list and token_contract input, one for SASH airdrop, one for SGM airdrop.
+
+[SigmoidExchange.sol](https://github.com/Sigmoid-Protocol/Sigmoid-main/blob/main/contracts/SigmoidAirdrop.sol)
