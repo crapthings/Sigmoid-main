@@ -251,11 +251,25 @@ interface ISigmoidTokens {
 
     function isActive(bool _contract_is_active) external returns (bool);
     function setPhase(uint256 phase) external returns (bool);
-    function maxiumuSupply() external view returns (uint256);
+    
+    function name() external view returns (string memory);
+    function symbol() external view returns (string memory);
+    function decimals() external view returns (uint8);
+    function maximumSupply() external view returns (uint256);
+    function AirdropedSupply() external  view returns (uint256);
+    function lockedBalance(address account) external view returns (uint256);
+    function checkLockedBalance(address account, uint256 amount) external view returns (bool);
+    
     function setGovernanceContract(address governance_address) external returns (bool);
     function setBankContract(address bank_address) external returns (bool);
     function setExchangeContract(address exchange_addres) external returns (bool);
+    
+    function setAirdropedSupply(uint256 total_airdroped_supply) external returns (bool);
+    
     function mint(address _to, uint256 _amount) external returns (bool);
+    function mintAllocation(address _to, uint256 _amount) external returns (bool);
+    function mintAirdrop(address _to, uint256 _amount) external returns (bool);
+    
     function bankTransfer(address _from, address _to, uint256 _amount) external returns (bool);
 }
 
