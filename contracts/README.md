@@ -1,5 +1,5 @@
 
-# The contracts of Sigmoid protocol (in deployment order):
+# The contracts of Sigmoid protocol ( in deployment order ):
 
 
 ## The governance contract of Sigmoid protocol
