@@ -43,4 +43,4 @@ The DEX of erc659 bonds, bonds can be auctioned on this secondary market, using 
 
 SASH and SGM airdrop contract, this contract need to be deployed twice with diffrent airdrop list and token_contract input, one for SASH airdrop, one for SGM airdrop.
 
-[SigmoidExchange.sol](https://github.com/Sigmoid-Protocol/Sigmoid-main/blob/main/contracts/SigmoidAirdrop.sol)
+[SigmoidAirdrop.sol](https://github.com/Sigmoid-Protocol/Sigmoid-main/blob/main/contracts/SigmoidAirdrop.sol)
