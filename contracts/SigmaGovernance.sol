@@ -432,9 +432,11 @@ contract SigmaGovernance is ISigmoidGovernance{
     
     mapping (uint256 => mapping(uint256=>uint256[6])) public _proposalVoting;
     mapping (uint256 => mapping(uint256=>address)) public _proposalAddress;
-    mapping (uint256 => uint256[6]) public _proposalClassInfo;
+    
     //roposal class, proposal nonce, [0proposal timelock, 1total vote, 2appove vote, 3Architect Veto(0 no vote,
-    //1 aprove, 2 vote veto), proposal can be exacuted, proposal execution interval]
+    //1 aprove, 2 vote veto), 4proposal can be exacuted, 5proposal execution interval]
+    mapping (uint256 => uint256[6]) public _proposalClassInfo;
+
     
     mapping (uint256 => uint256)public _proposalNonce;
     
