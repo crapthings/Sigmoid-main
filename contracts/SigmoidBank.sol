@@ -411,13 +411,34 @@ contract SigmoidBank is ISigmoidBank,swap{
     address[] public USD_token_list;
 
    
-    constructor(address SASH_Contract, address SGM_Contract, address governance_address,address swapFactoryAddress ) public {
+    constructor(address SASH_Contract, address SGM_Contract, address governance_address, address swapFactoryAddress, address USDC, address USDT, address BUSD, address DAI) public {
         SASH_contract=SASH_Contract;
         SGM_contract=SGM_Contract;
         governance_contract=governance_address;
         dev_address = msg.sender;
         SwapFactoryAddress=swapFactoryAddress;
         token_contract[0]=SASH_contract;
+        
+        USD_token_list.push(USDC);
+        if(IUniswapV2Factory(SwapFactoryAddress).getPair(USDC,token_contract[0])==address(0)){  
+            IUniswapV2Factory(SwapFactoryAddress).createPair(USDC,token_contract[0]);
+        }
+        
+        USD_token_list.push(USDT);
+        if(IUniswapV2Factory(SwapFactoryAddress).getPair(USDT,token_contract[0])==address(0)){  
+            IUniswapV2Factory(SwapFactoryAddress).createPair(USDT,token_contract[0]);
+        }
+        
+        USD_token_list.push(BUSD);
+        if(IUniswapV2Factory(SwapFactoryAddress).getPair(BUSD,token_contract[0])==address(0)){  
+            IUniswapV2Factory(SwapFactoryAddress).createPair(BUSD,token_contract[0]);
+        }
+        
+        USD_token_list.push(DAI);
+        if(IUniswapV2Factory(SwapFactoryAddress).getPair(DAI,token_contract[0])==address(0)){  
+            IUniswapV2Factory(SwapFactoryAddress).createPair(DAI,token_contract[0]);
+        }
+        
 
     }
     
@@ -588,8 +609,8 @@ contract SigmoidBank is ISigmoidBank,swap{
     
     //get the projected exchange rate of SGM to SASH
     function getBondExchangeRatSGMtoSASH(uint256 amount_SGM_out) view public override returns (uint256){
-        uint256 maxium_supply_SGM = ISigmoidTokens(SGM_contract).maxiumuSupply();
-        uint256 supply_multiplier = IERC20(SGM_contract).totalSupply()*1e6/maxium_supply_SGM;
+        uint256 maximum_supply_SGM = ISigmoidTokens(SGM_contract).maximumSupply();
+        uint256 supply_multiplier = IERC20(SGM_contract).totalSupply()*1e6/maximum_supply_SGM;
         uint256 supply_multiplier_rate = 1000 + supply_multiplier**2/1e6;
         return(amount_SGM_out*supply_multiplier_rate);       
     }
@@ -597,8 +618,8 @@ contract SigmoidBank is ISigmoidBank,swap{
     //get the projected exchange rate of SASH to SGM
     function getBondExchangeRateSASHtoSGM(uint256 amount_SASH_in) view public override returns (uint256){
         require(amount_SASH_in>=1e18, "Amount must be higher than 1 SASHH.");
-        uint256 maxium_supply_SGM = ISigmoidTokens(SGM_contract).maxiumuSupply();
-        uint256 supply_multiplier=IERC20(SGM_contract).totalSupply()*1e6/maxium_supply_SGM;
+        uint256 maximum_supply_SGM = ISigmoidTokens(SGM_contract).maximumSupply();
+        uint256 supply_multiplier=IERC20(SGM_contract).totalSupply()*1e6/maximum_supply_SGM;
         uint256 supply_multiplier_rate= 1000+supply_multiplier**2/1e6;
   
         return(amount_SASH_in/supply_multiplier_rate);          
@@ -713,8 +734,8 @@ contract SigmoidBank is ISigmoidBank,swap{
         require(phase_now >= 1);
         require(amount_SASH_in>=1e18, "Amount must be higher than 1 USD.");
         uint256 amount_bond_out = getBondExchangeRateSASHtoSGM(amount_SASH_in);
-        uint256 maxium_supply_SGM = ISigmoidTokens(SGM_contract).maxiumuSupply();
-        require(amount_bond_out+IERC20(SGM_contract).totalSupply()<=maxium_supply_SGM, "Cant mint more SGM.");
+        uint256 maximum_supply_SGM = ISigmoidTokens(SGM_contract).maximumSupply();
+        require(amount_bond_out+IERC20(SGM_contract).totalSupply()<=maximum_supply_SGM, "Cant mint more SGM.");
         address pair_addrss=IUniswapV2Factory(SwapFactoryAddress).getPair(SGM_contract,SASH_contract);
         require(IERC20(token_contract[0]).transferFrom(msg.sender, pair_addrss, amount_SASH_in),'Not enough SASH for the deposit.');
         require(ISigmoidTokens(SGM_contract).mint(pair_addrss,amount_bond_out));
