@@ -660,7 +660,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         
         address pair_address= IUniswapV2Factory(SwapFactoryAddress).getPair(path[0],path[1]);
         
-        assert(IWETH(WETH).transfer(pair_address, msg.value));
+        assert(IWETH(WETH).transfer(pair_address, amounts[0]));
         
         _swap(amounts, path, address(this));
         uint256 amount_USD_in = amounts[amounts.length-1];
