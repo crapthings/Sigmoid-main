@@ -196,6 +196,100 @@ interface IUniswapV2Factory {
     function setFeeToSetter(address) external;
 }
 
+interface IUniswapV2Router01 {
+    function factory() external pure returns (address);
+    function WETH() external pure returns (address);
+
+    function addLiquidity(
+        address tokenA,
+        address tokenB,
+        uint amountADesired,
+        uint amountBDesired,
+        uint amountAMin,
+        uint amountBMin,
+        address to,
+        uint deadline
+    ) external returns (uint amountA, uint amountB, uint liquidity);
+    function addLiquidityETH(
+        address token,
+        uint amountTokenDesired,
+        uint amountTokenMin,
+        uint amountETHMin,
+        address to,
+        uint deadline
+    ) external payable returns (uint amountToken, uint amountETH, uint liquidity);
+    function removeLiquidity(
+        address tokenA,
+        address tokenB,
+        uint liquidity,
+        uint amountAMin,
+        uint amountBMin,
+        address to,
+        uint deadline
+    ) external returns (uint amountA, uint amountB);
+    function removeLiquidityETH(
+        address token,
+        uint liquidity,
+        uint amountTokenMin,
+        uint amountETHMin,
+        address to,
+        uint deadline
+    ) external returns (uint amountToken, uint amountETH);
+    function removeLiquidityWithPermit(
+        address tokenA,
+        address tokenB,
+        uint liquidity,
+        uint amountAMin,
+        uint amountBMin,
+        address to,
+        uint deadline,
+        bool approveMax, uint8 v, bytes32 r, bytes32 s
+    ) external returns (uint amountA, uint amountB);
+    function removeLiquidityETHWithPermit(
+        address token,
+        uint liquidity,
+        uint amountTokenMin,
+        uint amountETHMin,
+        address to,
+        uint deadline,
+        bool approveMax, uint8 v, bytes32 r, bytes32 s
+    ) external returns (uint amountToken, uint amountETH);
+    function swapExactTokensForTokens(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        address to,
+        uint deadline
+    ) external returns (uint[] memory amounts);
+    function swapTokensForExactTokens(
+        uint amountOut,
+        uint amountInMax,
+        address[] calldata path,
+        address to,
+        uint deadline
+    ) external returns (uint[] memory amounts);
+    function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline)
+        external
+        payable
+        returns (uint[] memory amounts);
+    function swapTokensForExactETH(uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline)
+        external
+        returns (uint[] memory amounts);
+    function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline)
+        external
+        returns (uint[] memory amounts);
+    function swapETHForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline)
+        external
+        payable
+        returns (uint[] memory amounts);
+
+    function quote(uint amountA, uint reserveA, uint reserveB) external pure returns (uint amountB);
+    function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) external pure returns (uint amountOut);
+    function getAmountIn(uint amountOut, uint reserveIn, uint reserveOut) external pure returns (uint amountIn);
+    function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts);
+    function getAmountsIn(uint amountOut, address[] calldata path) external view returns (uint[] memory amounts);
+}
+
 interface IUniswapV2Pair {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
@@ -328,7 +422,7 @@ interface ISigmoidBank{
     function getBondExchangeRateSASHtoSGM(uint256 amount_SASH_in) view external returns (uint256);
     
     function buySASHBondWithETH(address _to, uint amountOutMin, address[] calldata path) external payable  returns (uint[] memory amounts);
-    function buySASHBondWithToken(address contract_address, address _to, uint amountIn, uint amountOutMin, address[] calldata path) external returns (uint[] memory amounts);
+    function buySASHBondWithToken(address _to, uint amountIn, uint amountOutMin, address[] calldata path) external returns (uint[] memory amounts);
    
     function buyWhitelistSASHBondWithUSD(bytes32[] calldata proof, address contract_address, uint256 index, address _to, uint256 amount, uint256 amount_USD_in) external returns (bool);
     function buySASHBondWithUSD(address contract_address, address _to, uint256 amount_USD_in) external returns (bool);
@@ -345,28 +439,7 @@ contract swap {
     address public WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public SwapFactoryAddress = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
     address public SwapRouterAddress = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
-    
-    function sortTokens(address tokenA, address tokenB) internal pure returns (address token0, address token1) {
-        require(tokenA != tokenB, 'PancakeLibrary: IDENTICAL_ADDRESSES');
-        (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), 'PancakeLibrary: ZERO_ADDRESS');
-    }
-    
-    
-    function _swap(uint[] memory amounts, address[] memory path, address _to) internal  {
-        for (uint i; i < path.length - 1; i++) {
-            (address input, address output) = (path[i], path[i + 1]);
-            (address token0,) = sortTokens(input, output);
-            uint amountOut = amounts[i + 1];
-            (uint amount0Out, uint amount1Out) = input == token0 ? (uint(0), amountOut) : (amountOut, uint(0));
-            address pairAddress=IUniswapV2Factory(SwapFactoryAddress).getPair(output, path[i + 2]);
-            address to = i < path.length - 2 ? pairAddress : _to;
-            IUniswapV2Pair(pairAddress).swap(
-                amount0Out, amount1Out, to, new bytes(0)
-            );
-        }
-    }
-    
+       
     function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) internal pure returns (uint amountOut) {
         
         require(amountIn > 0, 'INSUFFICIENT_INPUT_AMOUNT');
@@ -653,16 +726,8 @@ contract SigmoidBank is ISigmoidBank,swap{
         require(path[0] == WETH, 'INVALID_PATH');
         require(path[1] == USD_token_list[0], 'INVALID_PATH');
         require(path.length == 2, 'INVALID_PATH');
-        amounts = getAmountsOut( msg.value, path);
         
-        require(amounts[amounts.length - 1] >= amountOutMin, 'INSUFFICIENT_OUTPUT_AMOUNT');
-        IWETH(WETH).deposit{value: amounts[0]}();
-        
-        address pair_address= IUniswapV2Factory(SwapFactoryAddress).getPair(path[0],path[1]);
-        
-        assert(IWETH(WETH).transfer(pair_address, amounts[0]));
-        
-        _swap(amounts, path, address(this));
+        amounts = IUniswapV2Router01(SwapRouterAddress).swapExactETHForTokens{value : msg.value}(amountOutMin,path, address(this), 9999999999999);       
         uint256 amount_USD_in = amounts[amounts.length-1];
         
         require(amount_USD_in >= 1e18, "Amount must be higher than 1 USD.");
@@ -675,28 +740,20 @@ contract SigmoidBank is ISigmoidBank,swap{
         IUniswapV2Pair(pair_addrss).sync;
         IUniswapV2Pair(pair_addrss).mint(address(this));
         IERC659(bond_contract).issueBond(_to, 0, amount_bond_out*2);
+    
         
     }
     
     //buy SASH bond with token
-    function buySASHBondWithToken(address contract_address, address _to, uint amountIn, uint amountOutMin, address[] memory path) public override returns (uint[] memory amounts){
+    function buySASHBondWithToken( address _to, uint amountIn, uint amountOutMin, address[] memory path) public override returns (uint[] memory amounts){
         require(path[0] != WETH, 'INVALID_PATH');
         require(path[1] == WETH, 'INVALID_PATH');
         require(path[2] == USD_token_list[0], 'INVALID_PATH');
-        amounts = getAmountsOut( amountIn, path);
-        require(path.length==3);
-        require(amounts[amounts.length - 1] >= amountOutMin, 'INSUFFICIENT_OUTPUT_AMOUNT');
-
-        address pair_address= IUniswapV2Factory(SwapFactoryAddress).getPair(path[0],path[1]);
-        require(IERC20(contract_address).transferFrom(msg.sender, pair_address, amountIn));
-        _swap(amounts, path, address(this));
+        require(path.length == 3, 'INVALID_PATH');
         
-        
-        pair_address= IUniswapV2Factory(SwapFactoryAddress).getPair(path[0],path[1]);
-        assert(IWETH(WETH).transfer(pair_address, amounts[1]));
-        _swap(amounts, path, address(this));
-        
+        amounts = IUniswapV2Router01(SwapRouterAddress).swapExactTokensForTokens(amountIn,amountOutMin,path, address(this), 9999999999999);               
         uint256 amount_USD_in = amounts[amounts.length-1];
+        
         require(amount_USD_in >= 1e18, "Amount must be higher than 1 USD.");
         uint256 amount_bond_out = getBondExchangeRateUSDtoSASH(amount_USD_in);
         
