@@ -649,8 +649,10 @@ contract SigmoidBank is ISigmoidBank,swap{
     
     //buy SASH bond with ETH 
     function buySASHBondWithETH(address _to, uint amountOutMin, address[] memory path) public payable override returns (uint[] memory amounts){
+  
         require(path[0] == WETH, 'INVALID_PATH');
         require(path[1] == USD_token_list[0], 'INVALID_PATH');
+        require(path.length == 2, 'INVALID_PATH');
         amounts = getAmountsOut( msg.value, path);
         
         require(amounts[amounts.length - 1] >= amountOutMin, 'INSUFFICIENT_OUTPUT_AMOUNT');
