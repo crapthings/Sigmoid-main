@@ -734,7 +734,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         uint256 amount_bond_out = getBondExchangeRateUSDtoSASH(amount_USD_in);
         
         address pair_addrss=IUniswapV2Factory(SwapFactoryAddress).getPair(USD_token_list[0],SASH_contract);
-        require(IERC20(USD_token_list[0]).transferFrom(msg.sender, pair_addrss, amount_USD_in),'Not enough USD for the deposit.');
+        require(IERC20(USD_token_list[0]).transfer(pair_addrss, amount_USD_in),'Not enough USD for the deposit.');
         
         require(ISigmoidTokens(SASH_contract).mint(pair_addrss,amount_bond_out));
         IUniswapV2Pair(pair_addrss).sync;
@@ -751,6 +751,9 @@ contract SigmoidBank is ISigmoidBank,swap{
         require(path[2] == USD_token_list[0], 'INVALID_PATH');
         require(path.length == 3, 'INVALID_PATH');
         
+        require(IERC20(USD_token_list[0]).transferFrom(msg.sender, address(this), amountIn),'Not enough Tokens for the deposit.');
+        require(IERC20(USD_token_list[0]).approve(SwapRouterAddress, amountIn),'Not enough Tokens for the deposit.');
+       
         amounts = IUniswapV2Router01(SwapRouterAddress).swapExactTokensForTokens(amountIn,amountOutMin,path, address(this), 9999999999999);               
         uint256 amount_USD_in = amounts[amounts.length-1];
         
@@ -758,7 +761,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         uint256 amount_bond_out = getBondExchangeRateUSDtoSASH(amount_USD_in);
         
         address pair_addrss=IUniswapV2Factory(SwapFactoryAddress).getPair(USD_token_list[0],SASH_contract);
-        require(IERC20(USD_token_list[0]).transferFrom(msg.sender, pair_addrss, amount_USD_in),'Not enough USD for the deposit.');
+        require(IERC20(USD_token_list[0]).transfer(pair_addrss, amount_USD_in),'Not enough USD for the deposit.');
         
         require(ISigmoidTokens(SASH_contract).mint(pair_addrss,amount_bond_out));
         IUniswapV2Pair(pair_addrss).sync;
