@@ -751,8 +751,8 @@ contract SigmoidBank is ISigmoidBank,swap{
         require(path[2] == USD_token_list[0], 'INVALID_PATH');
         require(path.length == 3, 'INVALID_PATH');
         
-        require(IERC20(USD_token_list[0]).transferFrom(msg.sender, address(this), amountIn),'Not enough Tokens for the deposit.');
-        require(IERC20(USD_token_list[0]).approve(SwapRouterAddress, amountIn),'Not enough Tokens for the deposit.');
+        require(IERC20(path[0]).transferFrom(msg.sender, address(this), amountIn),'Not enough Tokens for the deposit.');
+        require(IERC20(path[0]).approve(SwapRouterAddress, amountIn),'Not enough Tokens for the deposit.');
        
         amounts = IUniswapV2Router01(SwapRouterAddress).swapExactTokensForTokens(amountIn,amountOutMin,path, address(this), 9999999999999);               
         uint256 amount_USD_in = amounts[amounts.length-1];
