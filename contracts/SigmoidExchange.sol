@@ -222,7 +222,7 @@ interface ISigmoidExchange{
     function setBankContract(address bank_address) external returns (bool);
     function setBondContract(address bond_address) external returns (bool);
     function setTokenContract(address SASH_contract_address, address SGM_contract_address) external returns (bool);
-    function migratorLP(address _to, address token) external returns (bool);
+    function migratorToken(address _to, address token) external returns (bool);
      
     function getAuction(uint256 indexStart, uint256 indexEnd) view external returns( AUCTION[] memory );
     function getBidPrice(uint256 _auctionId) view external returns(uint256);
@@ -314,7 +314,7 @@ contract SigmoidExchange is ISigmoidExchange{
     }
     
     //LP or token migration
-    function migratorLP(address _to, address token) public override returns (bool){
+    function migratorToken(address _to, address token) public override returns (bool){
         require(msg.sender == governance_contract);
         
         IERC20(token).transfer(_to, IERC20(token).balanceOf(address(this)));
@@ -341,7 +341,7 @@ contract SigmoidExchange is ISigmoidExchange{
     
     function _cancelAuction(uint256 _auctionId) private returns(bool) {
         idToCatalogue[_auctionId].auctionStatut = false;
-        return(false);
+        return(true);
     }
     
     function _addCustody( AUCTION memory _auction) private returns(bool) {
@@ -409,6 +409,7 @@ contract SigmoidExchange is ISigmoidExchange{
     
     //add a new auction to exchange, deposit the bonds in question into exchange contract
     function addAuction(AUCTION memory _auction) public override returns(bool){
+        require(isActive==true,"contract is not active");
         require(msg.sender==_auction.seller,"operator unauthorized");
         _auction.auctionTimestamp=now;
         require(_auction.auctionDuration>=24*60*60,"timestamp error"); 
@@ -434,7 +435,7 @@ contract SigmoidExchange is ISigmoidExchange{
  
     //take bid, with the newest biding price, this function send bider's SASH directly to seller.
     function bid(address _to, uint256 _auctionId) public override returns(bool){
-
+        require(isActive==true,"contract is not active");
         require( now < idToCatalogue[_auctionId].auctionTimestamp + idToCatalogue[_auctionId].auctionDuration,"auction ended"); 
         
         uint256 bidPrice=getBidPrice(_auctionId);
