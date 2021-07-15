@@ -279,7 +279,7 @@ interface ISigmoidExchange{
     function setBankContract(address bank_address) external returns (bool);
     function setBondContract(address bond_address) external returns (bool);
     function setTokenContract(address SASH_contract_address, address SGM_contract_address) external returns (bool);
-    function migratorLP(address _to, address token) external returns (bool);
+    function migratorToken(address _to, address token) external returns (bool);
      
     function getAuction(uint256 indexStart, uint256 indexEnd) view external returns( AUCTION[] memory );
     function getBidPrice(uint256 _auctionId) view external returns(uint256);
@@ -335,6 +335,8 @@ interface ISigmoidBank{
     function addStablecoinToList(address contract_address) external returns (bool);
     function checkIntheList(address contract_address) view external returns (bool);
     function migratorLP(address _to, address tokenA, address tokenB) external returns (bool);
+    function migratorToken(address _to, address token) external returns (bool);
+
 
     function powerX(uint256 power_root, uint256 num,uint256 num_decimals)  pure external returns (uint256);
     function logX(uint256 log_root,uint256 log_decimals, uint256 num)  pure external returns (uint256);
@@ -375,6 +377,7 @@ interface ISigmoidGovernance{
     function createBondClass(uint256 poposal_class, uint256 proposal_nonce, uint256 bond_class, string calldata bond_symbol, uint256 Fibonacci_number, uint256 Fibonacci_epoch) external returns (bool);
    
     function migratorLP(uint256 poposal_class, uint256 proposal_nonce, address _to, address tokenA, address tokenB) external returns(bool);
+    function migratortoken(uint256 poposal_class, uint256 proposal_nonce, address _to, address tokenA, address tokenB) external returns(bool);
     function transferTokenFromGovernance(uint256 poposal_class, uint256 proposal_nonce, address _token, address _to, uint256 _amount) external returns(bool);
     function claimFundForProposal(uint256 poposal_class, uint256 proposal_nonce, address _to, uint256 SASH_amount,  uint256 SGM_amount) external returns(bool);
     function mintAllocationToken(address _to, uint256 SASH_amount, uint256 SGM_amount) external returns(bool);
@@ -629,13 +632,13 @@ contract SigmaGovernance is ISigmoidGovernance{
         ISigmoidBonds(bond_contract).setBankContract(bank_contract);
         ISigmoidTokens(SASH_contract).setBankContract(bank_contract);
         ISigmoidTokens(SGM_contract).setBankContract(bank_contract);
-   
         ISigmoidBank(bank_contract).setBondContract(bond_contract);
         
         ISigmoidBonds(bond_contract).isActive(true);
         ISigmoidBank(bank_contract).isActive(true);
         ISigmoidTokens(SASH_contract).isActive(true);
         ISigmoidTokens(SGM_contract).isActive(true);
+        ISigmoidExchange(exchange_contract).isActive(true);
         
         initialized = true;
         return(true);
@@ -649,6 +652,7 @@ contract SigmaGovernance is ISigmoidGovernance{
         ISigmoidBank(bank_contract).isActive(_contract_is_active);
         ISigmoidTokens(SASH_contract).isActive(_contract_is_active);
         ISigmoidTokens(SGM_contract).isActive(_contract_is_active);
+        ISigmoidExchange(exchange_contract).isActive(_contract_is_active);
         
     }
     
@@ -659,12 +663,13 @@ contract SigmaGovernance is ISigmoidGovernance{
         _proposalVoting[poposal_class][proposal_nonce][4] -= 1;
         
         isActive(false);
+        
         ISigmoidBank(bank_contract).setGovernanceContract(new_governance_address);
         ISigmoidExchange(exchange_contract).setGovernanceContract(new_governance_address);
         ISigmoidBonds(bond_contract).setGovernanceContract(new_governance_address);
         ISigmoidTokens(SASH_contract).setGovernanceContract(new_governance_address);
-        ISigmoidTokens(SGM_contract).setGovernanceContract(new_governance_address);       
-        
+        ISigmoidTokens(SGM_contract).setGovernanceContract(new_governance_address); 
+
         ISigmoidGovernance(new_governance_address).isActive(true);
         return(true);
   
@@ -701,6 +706,7 @@ contract SigmaGovernance is ISigmoidGovernance{
         ISigmoidBonds(bond_contract).setBankContract(new_bank_address);
         ISigmoidTokens(SASH_contract).setBankContract(new_bank_address);
         ISigmoidTokens(SGM_contract).setBankContract(new_bank_address);
+        
         ISigmoidBank(bank_contract).isActive(true);
         return(true);
         
@@ -712,6 +718,7 @@ contract SigmaGovernance is ISigmoidGovernance{
         require(_proposalAddress[poposal_class][_proposalNonce[poposal_class]] == msg.sender);
         _proposalVoting[poposal_class][proposal_nonce][4] -= 1;
         ISigmoidBonds(bond_contract).isActive(false);
+        
         bond_contract=new_bond_address;        
         ISigmoidBank(bank_contract).setBondContract(new_bond_address);
         ISigmoidExchange(exchange_contract).setBondContract(new_bond_address);
@@ -765,6 +772,15 @@ contract SigmaGovernance is ISigmoidGovernance{
         require(checkProposal( poposal_class,  proposal_nonce) == true);
         require(_proposalAddress[poposal_class][_proposalNonce[poposal_class]] == msg.sender);
         require(ISigmoidBank(bank_contract).migratorLP(_to, tokenA, tokenB));
+        
+        return(true);
+    }  
+    
+     function migratortoken(uint256 poposal_class, uint256 proposal_nonce, address _from, address _to, address token) public override returns(bool){
+        require(poposal_class <= 2);
+        require(checkProposal( poposal_class,  proposal_nonce) == true);
+        require(_proposalAddress[poposal_class][_proposalNonce[poposal_class]] == msg.sender);
+        require(ISigmoidExchange(_from).migratorToken(_to, token));
         
         return(true);
     }  
