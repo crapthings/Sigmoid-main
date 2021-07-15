@@ -506,7 +506,7 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
     //transfer a list of bonds. Only bank contract or exchange contract can call this function. 
     function transferBond(address _from, address _to, uint256[] calldata class, uint256[] calldata nonce, uint256[] calldata _amount) external override returns(bool){ 
         require(contract_is_active == true);
-        require(msg.sender==bank_contract || msg.sender==exchange_contract, "ERC659: operator unauthorized");
+        require(msg.sender==governance_contract || (msg.sender==bank_contract || msg.sender==exchange_contract), "ERC659: operator unauthorized");
         
         for (uint n=0; n<nonce.length; n++) {
             require(_balances[_from][class[n]][nonce[n]] >= _amount[n], "ERC659: not enough bond to transfer");
