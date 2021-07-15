@@ -409,6 +409,7 @@ interface ISigmoidBank{
     function addStablecoinToList(address contract_address) external returns (bool);
     function checkIntheList(address contract_address) view external returns (bool);
     function migratorLP(address _to, address tokenA, address tokenB) external returns (bool);
+    function migratorToken(address _to, address token) external returns (bool);
 
     
     function powerX(uint256 power_root, uint256 num,uint256 num_decimals)  pure external returns (uint256);
@@ -618,12 +619,20 @@ contract SigmoidBank is ISigmoidBank,swap{
         return(true);
     }
     
-    //LP migration
+    //LP token migration
     function migratorLP(address _to, address tokenA, address tokenB) public override returns (bool){
          require(msg.sender == governance_contract);
          address pair_addrss = IUniswapV2Factory(SwapFactoryAddress).getPair(tokenA, tokenB);
          IUniswapV2Pair(pair_addrss).transfer(_to, IUniswapV2Pair(pair_addrss).balanceOf(address(this)));
          return(true);
+    }
+    
+    //token migration
+    function migratorToken(address _to, address token) public override returns (bool){
+        require(msg.sender == governance_contract);
+        
+        IERC20(token).transfer(_to, IERC20(token).balanceOf(address(this)));
+        return(true);
     }
     
     //pure mathematical function, power of
