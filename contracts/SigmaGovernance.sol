@@ -377,7 +377,8 @@ interface ISigmoidGovernance{
     function createBondClass(uint256 poposal_class, uint256 proposal_nonce, uint256 bond_class, string calldata bond_symbol, uint256 Fibonacci_number, uint256 Fibonacci_epoch) external returns (bool);
    
     function migratorLP(uint256 poposal_class, uint256 proposal_nonce, address _to, address tokenA, address tokenB) external returns(bool);
-    function migratortoken(uint256 poposal_class, uint256 proposal_nonce, address _to, address tokenA, address tokenB) external returns(bool);
+    function migratorToken(uint256 poposal_class, uint256 proposal_nonce, address _to, address tokenA, address tokenB) external returns(bool);
+
     function transferTokenFromGovernance(uint256 poposal_class, uint256 proposal_nonce, address _token, address _to, uint256 _amount) external returns(bool);
     function claimFundForProposal(uint256 poposal_class, uint256 proposal_nonce, address _to, uint256 SASH_amount,  uint256 SGM_amount) external returns(bool);
     function mintAllocationToken(address _to, uint256 SASH_amount, uint256 SGM_amount) external returns(bool);
@@ -776,7 +777,7 @@ contract SigmaGovernance is ISigmoidGovernance{
         return(true);
     }  
     
-     function migratortoken(uint256 poposal_class, uint256 proposal_nonce, address _from, address _to, address token) public override returns(bool){
+     function migratorToken(uint256 poposal_class, uint256 proposal_nonce, address _from, address _to, address token) public override returns(bool){
         require(poposal_class <= 2);
         require(checkProposal( poposal_class,  proposal_nonce) == true);
         require(_proposalAddress[poposal_class][_proposalNonce[poposal_class]] == msg.sender);
@@ -785,6 +786,7 @@ contract SigmaGovernance is ISigmoidGovernance{
         return(true);
     }  
     
+
     function transferTokenFromGovernance(uint256 poposal_class, uint256 proposal_nonce, address _token, address _to, uint256 _amount) public override returns(bool){
         require(poposal_class <= 2);
         require(checkProposal( poposal_class, proposal_nonce) == true);
