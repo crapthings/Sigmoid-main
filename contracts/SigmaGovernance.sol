@@ -392,8 +392,15 @@ interface ISigmoidGovernance{
 
 contract SigmaGovernance is ISigmoidGovernance{
     address public dev_address;     //only the dev address have the veto right
-    address public CSO_address;     //CSO addrss can pause all sigmoid protocols contract
+    address public VC_address;     //CSO addrss can pause all sigmoid protocols contract
     address public marketing_team_address;
+    address public CSO_address;     //CSO addrss can pause all sigmoid protocols contract
+
+    mapping (address => bool) public dev_refusal;
+    mapping (address => bool) public VC_refusal;
+    mapping (address => bool) public marketing_team_refusal;
+ 
+   
     address public SASH_contract;
     address public SGM_contract;
     address public governance_contract;
@@ -458,17 +465,17 @@ contract SigmaGovernance is ISigmoidGovernance{
         _proposalClassInfo[0][0] = 15*24*60*60;//timelock
         _proposalClassInfo[0][1] = 50;//minimum approval percentage needed
         _proposalClassInfo[0][3] = 1;//need arechitect approval
-        _proposalClassInfo[0][4] = 1;//maximum excution time
+        _proposalClassInfo[0][4] = 1;//maximum execution time
         
         _proposalClassInfo[1][0] = 10*24*60*60;//timelock
         _proposalClassInfo[1][1] = 50;//minimum approval percentage needed
         _proposalClassInfo[1][3] = 1;//need arechitect approval
-        _proposalClassInfo[1][4] = 1;//maximum excution time
+        _proposalClassInfo[1][4] = 1;//maximum execution time
         
         _proposalClassInfo[2][0] = 5*24*60*60;//timelock
         _proposalClassInfo[2][1] = 50;//minimum approval percentage needed
-        _proposalClassInfo[2][3] = 0;//need arechitect approval
-        _proposalClassInfo[2][4] = 120;//maximum excution time
+        _proposalClassInfo[2][3] = 1;//need arechitect approval
+        _proposalClassInfo[2][4] = 120;//maximum execution time
         
         dev_address = msg.sender;
         CSO_address = _CSO_address;   
@@ -562,14 +569,32 @@ contract SigmaGovernance is ISigmoidGovernance{
     
     function veto(uint256 poposal_class, uint256 proposal_nonce, bool approval) public override returns(bool){
         require( _proposalVoting[poposal_class][proposal_nonce][0] + _proposalClassInfo[poposal_class][0] > now);
-          require(msg.sender == dev_address,"msg.sender is not dev_address");
-        if (approval == true){
-            _proposalVoting[poposal_class][proposal_nonce][3] = 1;
+        require(msg.sender == dev_address || msg.sender == VC_address || msg.sender == marketing_team_address, "unauthorized msg.sender");
+        
+        if(msg.sender == dev_address){
+            if (approval == true ){
+                require(VC_refusal[_proposalAddress[poposal_class][_proposalNonce[poposal_class]]] == false, "VC_refusal");
+                require(marketing_team_refusal[_proposalAddress[poposal_class][_proposalNonce[poposal_class]]] == false, "marketing_team_refusal");
+                _proposalVoting[poposal_class][proposal_nonce][3] = 1;
+            }
+            
+            if (approval == false){
+                _proposalVoting[poposal_class][proposal_nonce][3] = 2;
+                
+            }
+            
         }
         
-        if (approval == false){
-            _proposalVoting[poposal_class][proposal_nonce][3] = 2;
+        if(msg.sender == VC_address && approval == false){
+            VC_refusal[_proposalAddress[poposal_class][_proposalNonce[poposal_class]]] = true;
+     
         }
+        
+        if(msg.sender == marketing_team_address && approval == false){
+            marketing_team_refusal[_proposalAddress[poposal_class][_proposalNonce[poposal_class]]] = true;
+     
+        }
+       
         return(true);
           
     }
@@ -597,11 +622,11 @@ contract SigmaGovernance is ISigmoidGovernance{
     }
     
     function checkProposal(uint256 poposal_class, uint256 proposal_nonce) public view override returns(bool){
-        require( _proposalVoting[poposal_class][proposal_nonce][0] + _proposalClassInfo[poposal_class][0] < now , "Wait");
+        require(_proposalVoting[poposal_class][proposal_nonce][0] + _proposalClassInfo[poposal_class][0] < now , "Wait");
         uint256 aproval_vote_percentage = _proposalVoting[poposal_class][proposal_nonce][2]*100/_proposalVoting[poposal_class][proposal_nonce][2];
         require(aproval_vote_percentage >= _proposalClassInfo[poposal_class][1], "Vote");
         
-        require(_proposalVoting[poposal_class][proposal_nonce][3] <= _proposalClassInfo[poposal_class][3], "Arechitect");
+        require(_proposalVoting[poposal_class][proposal_nonce][3] == _proposalClassInfo[poposal_class][3], "VETO");
         return(true);
 
     }
