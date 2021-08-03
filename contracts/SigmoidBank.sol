@@ -658,7 +658,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         require (amount_USD_in >= 1e18, "Amount must be higher than 1 USD.");
         uint256 supply_multiplier = IERC20(token_contract[0]).totalSupply()/1e24;
         uint256 supply_multiplier_power = logX(16,1,supply_multiplier);
-        return(amount_USD_in*1e3/powerX(supply_multiplier_power,11,1));
+        return(amount_USD_in*1e3/powerX(supply_multiplier_power,105,2));
     }
    
     //get the projected exchange rate of a ETH(BNB) to SASH
@@ -671,14 +671,14 @@ contract SigmoidBank is ISigmoidBank,swap{
         require (amount_USD_in >= 1e18, "Amount must be higher than 1 USD.");
         uint256 supply_multiplier = IERC20(token_contract[0]).totalSupply()/1e24;
         uint256 supply_multiplier_power = logX(16,1,supply_multiplier);
-        return(amount_USD_in*1e3/powerX(supply_multiplier_power,11,1));
+        return(amount_USD_in*1e3/powerX(supply_multiplier_power,105,2));
     }
     
     //get the projected exchange rate of SASH to USD
     function getBondExchangeRateSASHtoUSD(uint256 amount_SASH_out) view public override returns (uint256){
         uint256 supply_multiplier=IERC20(token_contract[0]).totalSupply()/1e24;
         uint256 supply_multiplier_power= logX(16,1,supply_multiplier);
-        return(powerX(supply_multiplier_power,11,1)*amount_SASH_out/1e3);
+        return(powerX(supply_multiplier_power,105,2)*amount_SASH_out/1e3);
     }
     
     //get the projected exchange rate of USD to SASH
@@ -686,7 +686,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         require(amount_USD_in>=1e18, "Amount must be higher than 1 USD.");
         uint256 supply_multiplier=IERC20(token_contract[0]).totalSupply()/1e24;
         uint256 supply_multiplier_power= logX(16,1,supply_multiplier);
-        return(amount_USD_in*1e3/powerX(supply_multiplier_power,11,1));
+        return(amount_USD_in*1e3/powerX(supply_multiplier_power,105,2));
     }
     
     //get the projected exchange rate of SGM to SASH
@@ -859,7 +859,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         uint256 amount_SGM_transfer;
         
         for (uint i=0; i<_amount.length; i++){
-            if(class!=2 && class!=3){
+            if(class!=0 || class!=1){
                 amount_token_mint+=_amount[i];
             }
             
