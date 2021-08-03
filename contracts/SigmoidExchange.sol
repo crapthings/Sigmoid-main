@@ -390,6 +390,7 @@ contract SigmoidExchange is ISigmoidExchange{
         for (uint i = indexStart; i<indexEnd; i++) {
            
             auctionList[i-indexStart]=idToCatalogue[i];
+            auctionList[i-indexStart].startingPrice=getBidPrice(i);
             
         }
         
@@ -398,6 +399,7 @@ contract SigmoidExchange is ISigmoidExchange{
     
     //get the bid price of an ongoing auction
     function getBidPrice(uint256 _auctionId) view public override returns(uint256){
+        
         uint256 time_passed = now - idToCatalogue[_auctionId].auctionTimestamp;
         require(time_passed<idToCatalogue[_auctionId].auctionDuration,"auction ended");
         uint256 bidPrice = idToCatalogue[_auctionId].startingPrice / 1e6 *( 1e6-(idToCatalogue[_auctionId].auctionDuration *1e6 / time_passed));
@@ -406,10 +408,10 @@ contract SigmoidExchange is ISigmoidExchange{
         }
         return(bidPrice);
     }
-    
+   
     //add a new auction to exchange, deposit the bonds in question into exchange contract
     function addAuction(AUCTION memory _auction) public override returns(bool){
-        require(isActive==true,"contract is not active");
+        require(contract_is_active==true,"contract is not active");
         require(msg.sender==_auction.seller,"operator unauthorized");
         _auction.auctionTimestamp=now;
         require(_auction.auctionDuration>=24*60*60,"timestamp error"); 
@@ -435,7 +437,7 @@ contract SigmoidExchange is ISigmoidExchange{
  
     //take bid, with the newest biding price, this function send bider's SASH directly to seller.
     function bid(address _to, uint256 _auctionId) public override returns(bool){
-        require(isActive==true,"contract is not active");
+        require(contract_is_active==true,"contract is not active");
         require( now < idToCatalogue[_auctionId].auctionTimestamp + idToCatalogue[_auctionId].auctionDuration,"auction ended"); 
         
         uint256 bidPrice=getBidPrice(_auctionId);
