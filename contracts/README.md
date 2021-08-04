@@ -9,13 +9,6 @@ Every proposal need to be converted into a smart contract. If the proposal is pa
 
 
 
-## SASH and SGM airdrop contract
-this contract need to be deployed twice with diffrent airdrop list and token_contract input, one for SASH airdrop, one for SGM airdrop.
-
-[SigmoidAirdrop.sol](https://github.com/Sigmoid-Protocol/Sigmoid-main/blob/main/contracts/SigmoidAirdrop.sol)
-
-
-
 ## The erc20 token contract of Sigmoid Cash
 
 [SASHtoken.sol](https://github.com/Sigmoid-Protocol/Sigmoid-main/blob/main/contracts/SASHtoken.sol)
