@@ -85,7 +85,7 @@ interface IERC659 {
     function getClassCreated() external view returns (uint256[] memory);
     
     function balanceOf(address account, uint256 class, uint256 nonce) external view returns (uint256);
-    function batchBalanceOf(address account, uint256 class) external view returns(uint256[] memory);
+    function totalBatchBalanceOf(address account, uint256 class) external view returns(uint256);
     
     function getBondSymbol(uint256 class) view external returns (string memory);
     function getBondInfo(uint256 class, uint256 nonce) external view returns (string memory BondSymbol, uint256 timestamp, uint256 info2, uint256 info3, uint256 info4, uint256 info5,uint256 info6);
