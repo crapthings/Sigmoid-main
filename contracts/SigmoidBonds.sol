@@ -85,6 +85,7 @@ interface IERC659 {
     
     function balanceOf(address account, uint256 class, uint256 nonce) external view returns (uint256);
     function batchBalanceOf(address account, uint256 class) external view returns(uint256[] memory);
+    function totalBatchBalanceOf(address account, uint256 class) external view returns(uint256);
     
     function getBondSymbol(uint256 class) view external returns (string memory);
     function getBondInfo(uint256 class, uint256 nonce) external view returns (string memory BondSymbol, uint256 timestamp, uint256 info2, uint256 info3, uint256 info4, uint256 info5,uint256 info6);
@@ -315,6 +316,16 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
             
         }
         return (balancesAllNonce);
+    }
+
+   function totalBatchBalanceOf(address account, uint256 class) public override view returns(uint256){
+        uint256 totalBatchBalance;
+        for (uint i = 0; i<last_bond_nonce[class]; i++) {
+            totalBatchBalance += _balances[account][class][i];
+            
+        }
+        
+        return (totalBatchBalance);
     }
 
     function getBondSymbol(uint256 class) view public override returns (string memory){
