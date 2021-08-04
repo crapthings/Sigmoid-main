@@ -87,6 +87,7 @@ interface IERC659 {
     
     function balanceOf(address account, uint256 class, uint256 nonce) external view returns (uint256);
     function batchBalanceOf(address account, uint256 class) external view returns(uint256[] memory);
+    function totalBatchBalanceOf(address account, uint256 class) external view returns(uint256);
     
     function getBondSymbol(uint256 class) view external returns (string memory);
     function getBondInfo(uint256 class, uint256 nonce) external view returns (string memory BondSymbol, uint256 timestamp, uint256 info2, uint256 info3, uint256 info4, uint256 info5,uint256 info6);
@@ -554,7 +555,7 @@ contract SigmaGovernance is ISigmoidGovernance{
     }
     
     function vote(uint256 poposal_class, uint256 proposal_nonce, bool approval, uint256 _amount) public override returns(bool){
-        require( ISigmoidBank(bank_contract).buyVoteBondWithSGM(msg.sender, msg.sender, _amount));
+        require( ISigmoidBank(bank_contract).buyVoteBondWithSGM(msg.sender, msg.sender, _amount) == true);
         require( _proposalVoting[poposal_class][proposal_nonce][0] + _proposalClassInfo[poposal_class][0] > now);
         if (approval == true){
             _proposalVoting[poposal_class][proposal_nonce][1]+=_amount;
@@ -602,7 +603,27 @@ contract SigmaGovernance is ISigmoidGovernance{
     }
      
     function createProposal(uint256 poposal_class, address proposal_address, uint256 proposal_execution_nonce, uint256 proposal_execution_interval) public override returns(bool){
+
         require(initialized == true);
+        require(poposal_class <= 2, "invalid class");
+        require(ISigmoidBank(bank_contract).buyVoteBondWithSGM(msg.sender, msg.sender, 1e18) == true);
+        
+        uint256 totalBalanceVote = IERC659(bond_contract).totalBatchBalanceOf(msg.sender,1);
+        if(poposal_class==0){
+            require(totalBalanceVote > IERC20(SASH_contract).totalSupply()/1e6);
+            
+        }
+        
+        if(poposal_class==1){
+            require(totalBalanceVote > IERC20(SASH_contract).totalSupply()/4e6);
+            
+        }
+        
+        if(poposal_class==2){
+            require(totalBalanceVote > IERC20(SASH_contract).totalSupply()/1e7);
+            
+        }
+
         _proposalNonce[poposal_class]+=1;
         _proposalVoting[poposal_class][_proposalNonce[poposal_class]][0] = now;
         _proposalAddress[poposal_class][_proposalNonce[poposal_class]] = proposal_address;
