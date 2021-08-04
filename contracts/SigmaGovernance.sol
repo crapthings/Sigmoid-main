@@ -587,11 +587,13 @@ contract SigmaGovernance is ISigmoidGovernance{
         
         if(msg.sender == VC_address && approval == false){
             VC_refusal[_proposalAddress[poposal_class][_proposalNonce[poposal_class]]] = true;
+            _proposalVoting[poposal_class][proposal_nonce][3] = 2;
      
         }
         
         if(msg.sender == marketing_team_address && approval == false){
             marketing_team_refusal[_proposalAddress[poposal_class][_proposalNonce[poposal_class]]] = true;
+            _proposalVoting[poposal_class][proposal_nonce][3] = 2;
      
         }
        
