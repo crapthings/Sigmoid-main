@@ -843,7 +843,7 @@ contract SigmoidBank is ISigmoidBank,swap{
         require(ISigmoidTokens(SASH_contract).bankTransfer(Bigest_LP_address, pair_addrss, amount_bond_out),'Not enough SGM for the deposit.');
         IUniswapV2Pair(Bigest_LP_address).sync;
         require(IERC20(SGM_contract).transferFrom(_from, pair_addrss, amount_SGM_in),'Not enough SGM for the deposit.');
-        require(ISigmoidTokens(SASH_contract).mint(pair_addrss,amount_bond_out));
+        //require(ISigmoidTokens(SASH_contract).mint(pair_addrss,amount_bond_out));
         IUniswapV2Pair(pair_addrss).sync;
         IUniswapV2Pair(pair_addrss).mint(address(this));
         IERC659(bond_contract).issueBond(_to, 2, amount_SGM_in);
