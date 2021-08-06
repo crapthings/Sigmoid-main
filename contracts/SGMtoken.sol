@@ -299,7 +299,8 @@ contract ERC20 is IERC20 {
     
     function _mintAllocation(address account, uint256 amount) internal {
         require(account != address(0), "ERC20: mint to the zero address");
-
+        
+        total_allocation += amount;
         _balances[account] = _balances[account].add(amount);
         emit Transfer(address(0), account, amount);
     }
