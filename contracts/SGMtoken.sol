@@ -172,7 +172,8 @@ interface ISigmoidTokens {
     function symbol() external view returns (string memory);
     function decimals() external view returns (uint8);
     function maximumSupply() external view returns (uint256);
-    function AirdropedSupply() external  view returns (uint256);
+    function airdropedSupply() external view returns (uint256);
+    function allocatedSupply() external view returns (uint256);
     function lockedBalance(address account) external view returns (uint256);
     function checkLockedBalance(address account, uint256 amount) external view returns (bool);
     
@@ -203,6 +204,7 @@ contract ERC20 is IERC20 {
     uint256 public _totalSupply;
     uint256 public _maximumSupply;
     uint256 public total_airdrop;
+    uint256 public total_allocation;
     /**
      * @dev See {IERC20-totalSupply}.
      */
@@ -372,7 +374,7 @@ contract SGMtoken is ERC20, ISigmoidTokens{
     }
      
     function setPhase(uint256 phase) public override returns (bool){
-        require(phase== phase_now+1);
+        require(phase == phase_now+1);
         require(msg.sender == governance_contract);
         phase_now +=1;
         return(true);
@@ -402,13 +404,23 @@ contract SGMtoken is ERC20, ISigmoidTokens{
         return(true);
     }
     
+    function setAllocatedSupply(uint256 total_airdroped_supply) public override returns (bool){
+        require(msg.sender == governance_contract);
+        total_airdrop = total_airdroped_supply;
+        return(true);
+    }
+    
     //read only functions
     function maximumSupply() public override view returns (uint256) {
         return(_maximumSupply);
     }
 
-    function AirdropedSupply() public override view returns (uint256){
+    function airdropedSupply() public override view returns (uint256){
         return(total_airdrop);
+    }
+      
+    function allocatededSupply() public override view returns (uint256){
+        return(total_allocation);
     }
     
     function name() public override view returns (string memory) {
