@@ -172,7 +172,8 @@ interface ISigmoidTokens {
     function symbol() external view returns (string memory);
     function decimals() external view returns (uint8);
     function maximumSupply() external view returns (uint256);
-    function AirdropedSupply() external  view returns (uint256);
+    function airdropedSupply() external view returns (uint256);
+    function allocatedSupply() external view returns (uint256);
     function lockedBalance(address account) external view returns (uint256);
     function checkLockedBalance(address account, uint256 amount) external view returns (bool);
     
@@ -203,6 +204,7 @@ contract ERC20 is IERC20 {
     uint256 public _totalSupply;
     uint256 public _maximumSupply;
     uint256 public total_airdrop;
+    uint256 public total_allocation;
     /**
      * @dev See {IERC20-totalSupply}.
      */
@@ -221,11 +223,11 @@ contract ERC20 is IERC20 {
 
     
     function _lockedBalance(address account) internal  view returns (uint256){
-          if(_totalSupply / 1e6 * 15e3 >= total_airdrop){
+          if(_totalSupply / 1e6 * 4e4 >= total_airdrop){
              return(0);
          }
          
-         uint256 airdrop_blocked_ppm = 1e6 - (_totalSupply/1e6 * 15e3) * 1e6 / total_airdrop; 
+         uint256 airdrop_blocked_ppm = 1e6 - (_totalSupply/1e6 * 4e4) * 1e6 / total_airdrop; 
          return (locked_balances[account] / 1e6 * airdrop_blocked_ppm);
 
     }
@@ -235,12 +237,12 @@ contract ERC20 is IERC20 {
          return(true);
          }
          
-         //1.5% of the total supply of SASH wiill be used to payoff Airdrop
-         if(_totalSupply / 1e6 * 15e3 >= total_airdrop){
+         //4% of the total supply of SASH wiill be used to payoff Airdrop
+         if(_totalSupply / 1e6 * 4e4 >= total_airdrop){
              return(true);
          }
          
-         uint256 airdrop_blocked_ppm = 1e6 - (_totalSupply/1e6 * 15e3) * 1e6 / total_airdrop; 
+         uint256 airdrop_blocked_ppm = 1e6 - (_totalSupply/1e6 * 4e4) * 1e6 / total_airdrop; 
          if(amount <= balanceOf(account) - locked_balances[account] / 1e6 * airdrop_blocked_ppm){
              return(true);
          }
@@ -249,37 +251,31 @@ contract ERC20 is IERC20 {
     }
 
     function transfer(address recipient, uint256 amount) public override returns (bool) {
-        require(phase_now>=3,"wait until pahes 3 to transfer");
         _transfer(msg.sender, recipient, amount);
         return true;
     }
 
     function allowance(address owner, address spender) public override view returns (uint256) {
-        require(phase_now>=3,"wait until pahes 3 to transfer");
         return _allowances[owner][spender];
     }
 
     function approve(address spender, uint256 amount) public override returns (bool) {
-        require(phase_now>=3,"wait until pahes 3 to transfer");
         _approve(msg.sender, spender, amount);
         return true;
     }
 
     function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
-        require(phase_now>=3,"wait until pahes 3 to transfer");
         _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount, "ERC20: transfer amount exceeds allowance"));
         _transfer(sender, recipient, amount);
         return true;
     }
 
     function increaseAllowance(address spender, uint256 addedValue) public returns (bool) {
-        require(phase_now>=3,"wait until pahes 3 to transfer");
         _approve(msg.sender, spender, _allowances[msg.sender][spender].add(addedValue));
         return true;
     }
 
     function decreaseAllowance(address spender, uint256 subtractedValue) public returns (bool) {
-        require(phase_now>=3,"wait until pahes 3 to transfer");
         _approve(msg.sender, spender, _allowances[msg.sender][spender].sub(subtractedValue, "ERC20: decreased allowance below zero"));
         return true;
     }
@@ -318,7 +314,6 @@ contract ERC20 is IERC20 {
     
     function _burn(address account, uint256 amount) internal {
         require(account != address(0), "ERC20: burn from the zero address");
-        require(phase_now>=3,"wait until pahes 3 to burn");
         require(_checkLockedBalance(account, amount)==true,"ERC20: can't burn locked balance");
         _balances[account] = _balances[account].sub(amount, "ERC20: burn amount exceeds balance");
         _totalSupply = _totalSupply.sub(amount);
@@ -379,7 +374,7 @@ contract SASHtoken is ERC20, ISigmoidTokens{
     }
      
     function setPhase(uint256 phase) public override returns (bool){
-        require(phase== phase_now+1);
+        require(phase == phase_now+1);
         require(msg.sender == governance_contract);
         phase_now +=1;
         return(true);
@@ -409,13 +404,23 @@ contract SASHtoken is ERC20, ISigmoidTokens{
         return(true);
     }
     
+    function setAllocatedSupply(uint256 total_airdroped_supply) public override returns (bool){
+        require(msg.sender == governance_contract);
+        total_airdrop = total_airdroped_supply;
+        return(true);
+    }
+    
     //read only functions
     function maximumSupply() public override view returns (uint256) {
         return(_maximumSupply);
     }
 
-    function AirdropedSupply() public override view returns (uint256){
+    function airdropedSupply() public override view returns (uint256){
         return(total_airdrop);
+    }
+      
+    function allocatededSupply() public override view returns (uint256){
+        return(total_allocation);
     }
     
     function name() public override view returns (string memory) {
@@ -488,8 +493,5 @@ contract SASHtoken is ERC20, ISigmoidTokens{
         _transfer(_from, _to, _amount);
         return(true);
     }
-    
-  
+      
 }
-
-
