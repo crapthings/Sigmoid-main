@@ -394,8 +394,9 @@ interface ISigmoidGovernance{
 
 contract SigmaGovernance is ISigmoidGovernance{
     address public dev_address;     //only the dev address have the veto right
-    address public VC_address;     //CSO addrss can pause all sigmoid protocols contract
+    address public VC_address;     
     address public marketing_team_address;
+    address public dev_fund_address;
     address public CSO_address;     //CSO addrss can pause all sigmoid protocols contract
 
     mapping (address => bool) public dev_refusal;
@@ -453,7 +454,7 @@ contract SigmaGovernance is ISigmoidGovernance{
     
     mapping (uint256 => uint256)public _proposalNonce;
     
-    constructor(address _marketing_team_address, address _CSO_address) public{
+    constructor(address _marketing_team_address, address _CSO_address, address _VC_address, address _dev_fund_address) public{
         marketing_team_address =_marketing_team_address;
         allocation_ppm[dev_address][0] = 2e4;
         allocation_ppm[dev_address][1] = 6e4;
@@ -480,7 +481,10 @@ contract SigmaGovernance is ISigmoidGovernance{
         _proposalClassInfo[2][4] = 120;//maximum execution time
         
         dev_address = msg.sender;
-        CSO_address = _CSO_address;   
+        CSO_address = _CSO_address;  
+        marketing_team_address = _marketing_team_address;   
+        dev_fund_address = _dev_fund_address;   
+        VC_address = _VC_address;
       
     }
     
@@ -527,7 +531,10 @@ contract SigmaGovernance is ISigmoidGovernance{
     }
         
     function _mintReferralReward(address _to, uint256 SASH_amount) private returns(bool){
-        require(SASH_total_allocation_distributed + SASH_amount <=IERC20(SASH_contract).totalSupply() / 1e6 * SASH_budget_ppm);
+        
+        uint256 bank_minted_SASH = (IERC20(SASH_contract).totalSupply()-ISigmoidTokens(SASH_contract).allocatedSupply()-ISigmoidTokens(SASH_contract).airdropedSupply());
+       
+        require(SASH_total_allocation_distributed + SASH_amount <= bank_minted_SASH / 1e6 * SASH_budget_ppm);
         ISigmoidTokens(SASH_contract).mintAllocation(_to, SASH_amount);
         SASH_total_allocation_distributed += SASH_amount;
         
@@ -854,11 +861,13 @@ contract SigmaGovernance is ISigmoidGovernance{
         require(_proposalAddress[poposal_class][_proposalNonce[poposal_class]] == msg.sender);
         _proposalVoting[poposal_class][proposal_nonce][4] -= 1;
         
-        require(SASH_total_allocation_distributed + SASH_amount <= IERC20(SASH_contract).totalSupply()/ 1e6 * SASH_budget_ppm );
+        uint256 bank_minted_SASH = (IERC20(SASH_contract).totalSupply()-ISigmoidTokens(SASH_contract).allocatedSupply()-ISigmoidTokens(SASH_contract).airdropedSupply());
+        require(SASH_total_allocation_distributed + SASH_amount <= bank_minted_SASH / 1e6 * SASH_budget_ppm );
         ISigmoidTokens(SASH_contract).mintAllocation(_to, SASH_amount);
         SASH_total_allocation_distributed += SASH_amount;
         
-        require(SGM_total_allocation_distributed + SGM_amount <= IERC20(SGM_contract).totalSupply()/ 1e6 * SGM_budget_ppm);
+        uint256 bank_minted_SGM = (IERC20(SGM_contract).totalSupply()-ISigmoidTokens(SGM_contract).allocatedSupply()-ISigmoidTokens(SGM_contract).airdropedSupply());
+        require(SGM_total_allocation_distributed + SGM_amount <= bank_minted_SGM / 1e6 * SGM_budget_ppm);
         ISigmoidTokens(SGM_contract).mintAllocation(_to, SGM_amount);
         SGM_total_allocation_distributed += SGM_amount;
         
@@ -869,12 +878,14 @@ contract SigmaGovernance is ISigmoidGovernance{
 
     function mintAllocationToken(address _to, uint256 SASH_amount, uint256 SGM_amount) public override returns(bool){
          
-        require(allocation_minted[_to][0] + SASH_amount <= IERC20(SASH_contract).totalSupply()/ 1e6 * (allocation_ppm[_to][0]));
+        uint256 bank_minted_SASH = (IERC20(SASH_contract).totalSupply()-ISigmoidTokens(SASH_contract).allocatedSupply()-ISigmoidTokens(SASH_contract).airdropedSupply());
+        require(allocation_minted[_to][0] + SASH_amount <= bank_minted_SASH / 1e6 * (allocation_ppm[_to][0]));
         ISigmoidTokens(SASH_contract).mintAllocation(_to, SASH_amount);
         allocation_minted[_to][0] += SASH_amount;
         SASH_total_allocation_distributed += SASH_amount;
         
-        require(allocation_minted[_to][1] + SGM_amount <= (IERC20(SGM_contract).totalSupply()-SGM_total_allocation_distributed) / 1e6 * (allocation_ppm[_to][0]));
+        uint256 bank_minted_SGM = (IERC20(SGM_contract).totalSupply()-ISigmoidTokens(SGM_contract).allocatedSupply()-ISigmoidTokens(SGM_contract).airdropedSupply());
+        require(allocation_minted[_to][1] + SGM_amount <= bank_minted_SGM / 1e6 * (allocation_ppm[_to][0]));
         ISigmoidTokens(SGM_contract).mintAllocation(_to, SGM_amount);
         allocation_minted[_to][1] += SGM_amount;
         SGM_total_allocation_distributed += SGM_amount;
