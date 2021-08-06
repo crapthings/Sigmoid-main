@@ -351,7 +351,8 @@ interface ISigmoidTokens {
     function symbol() external view returns (string memory);
     function decimals() external view returns (uint8);
     function maximumSupply() external view returns (uint256);
-    function AirdropedSupply() external  view returns (uint256);
+    function airdropedSupply() external view returns (uint256);
+    function allocatedSupply() external view returns (uint256);
     function lockedBalance(address account) external view returns (uint256);
     function checkLockedBalance(address account, uint256 amount) external view returns (bool);
     
