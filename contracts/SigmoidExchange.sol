@@ -71,6 +71,7 @@ library SafeMath {
 }
 
 interface IERC659 {
+interface IERC659 {
     function totalSupply( uint256 class, uint256 nonce) external view returns (uint256);
     function activeSupply( uint256 class, uint256 nonce) external view returns (uint256);
     function burnedSupply( uint256 class, uint256 nonce) external view returns (uint256);
@@ -85,6 +86,7 @@ interface IERC659 {
     function getClassCreated() external view returns (uint256[] memory);
     
     function balanceOf(address account, uint256 class, uint256 nonce) external view returns (uint256);
+    function batchBalanceOf(address account, uint256 class) external view returns(uint256[] memory);
     function totalBatchBalanceOf(address account, uint256 class) external view returns(uint256);
     
     function getBondSymbol(uint256 class) view external returns (string memory);
@@ -93,6 +95,7 @@ interface IERC659 {
     
  
     function issueBond(address _to, uint256  class, uint256 _amount) external returns(bool);
+    function issueNFTBond(address _to, uint256  class, uint256 nonce, uint256 _amount, address NFT_address) external returns(bool);
     function redeemBond(address _from, uint256 class, uint256[] calldata nonce, uint256[] calldata _amount) external returns(bool);
     function transferBond(address _from, address _to, uint256[] calldata class, uint256[] calldata nonce, uint256[] calldata _amount) external returns(bool);
     function burnBond(address _from, uint256[] calldata class, uint256[] calldata nonce, uint256[] calldata _amount) external returns(bool);
