@@ -93,6 +93,7 @@ interface IERC659 {
     
  
     function issueBond(address _to, uint256  class, uint256 _amount) external returns(bool);
+    function issueNFTBond(address _to, uint256  class, uint256 nonce, uint256 _amount, address NFT_address) external returns(bool);
     function redeemBond(address _from, uint256 class, uint256[] calldata nonce, uint256[] calldata _amount) external returns(bool);
     function transferBond(address _from, address _to, uint256[] calldata class, uint256[] calldata nonce, uint256[] calldata _amount) external returns(bool);
     function burnBond(address _from, uint256[] calldata class, uint256[] calldata nonce, uint256[] calldata _amount) external returns(bool);
@@ -133,6 +134,12 @@ contract ERC659data {
     mapping (uint256 => uint256[]) public _nonceCreated;
     
     uint256[] public _classCreated;
+
+    mapping (uint256 => mapping (uint256 => address)) public ERC721_token_contract;
+    
+    mapping (uint256 => address) public ERC20_token_contract;
+
+
     
 }
 
@@ -145,6 +152,7 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
     address public bank_contract;
     address public bond_contract;
     
+        
     mapping (uint256 => uint256) public last_activeSupply;
     
     mapping (uint256 => uint256) public last_burnedSupply;
@@ -152,12 +160,11 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
     mapping (uint256 => uint256) public last_redeemedSupply;
     
     
-    mapping (uint256 => address) public token_contract;
-  
     mapping (uint256 => uint256)  public last_bond_redeemed; 
-    mapping (uint256 => uint256)  public _Fibonacci_number;     //controls who many kind of different bond nonce will be issued, =8 means that 8 different bonds nonce will be issued
-    mapping (uint256 => uint256)  public _Fibonacci_epoch;      //controls who much time will be needed before changing the bond nonce.
+    mapping (uint256 => uint256)  public _Fibonacci_number;     //controls how many kind of different bond nonce will be issued, =8 means that 8 different bonds nonce will be issued
+    mapping (uint256 => uint256)  public _Fibonacci_epoch;      //controls how much time will be needed before changing the bond nonce.
     mapping (uint256 => uint256)  public _genesis_nonce_time;       //the timestamp of the first bond nonce issued of a bond class
+
 
     constructor ( address governance_address) public {
 
@@ -211,7 +218,7 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
       
     function setTokenContract(uint256 class, address contract_address) public override returns (bool) {
         require(msg.sender==governance_contract, "ERC659: operator unauthorized");
-        token_contract[class] = contract_address;
+        ERC20_token_contract[class] = contract_address;
         return(true);
     }
     
@@ -403,7 +410,7 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
         _info[class][nonce][1]=_genesis_nonce_time[class] + (nonce) * _Fibonacci_epoch[class];
         _balances[_to][class][nonce]+=_amount;
         _activeSupply[class][nonce]+=_amount;
-        emit eventIssueBond(msg.sender, _to, class,nonce, _amount);
+        emit eventIssueBond(msg.sender, _to, class, nonce, _amount);
         return(true);
     }
     
@@ -419,6 +426,17 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
             emit eventIssueBond(msg.sender, _to, class,last_bond_nonce[class], _amount);
             return(true);
             }
+    } 
+    
+    function _issueNfTBond(address _to, uint256 class, uint256 nonce, uint256 _amount, address NFT_address) private returns(bool) {
+        if (_balances[_to][class][nonce] == 0){
+            _balances[_to][class][nonce]+=_amount;
+            _activeSupply[class][nonce]+=_amount;
+            ERC721_token_contract[class][nonce] = NFT_address;
+            emit eventIssueBond (msg.sender, _to, class, nonce, _amount);
+            return(true);
+            }
+            
     } 
     
     function _redeemBond(address _from, uint256 class, uint256 nonce, uint256 _amount) private returns(bool) {
@@ -446,7 +464,7 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
     }
     
     //Only bank contract can call this function, the calling of this function requires a deposit from the user to the bonk contract.        
-    function issueBond(address _to, uint256  class, uint256 _amount) external override returns(bool){
+    function issueBond(address _to, uint256 class, uint256 _amount) external override returns(bool){
         require(contract_is_active == true);
         require(msg.sender==bank_contract, "ERC659: operator unauthorized");
         require(_to != address(0), "ERC659: issue bond to the zero address");
@@ -491,6 +509,15 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
             }   
             require(_issueBond( _to, class, now_nonce + FibonacciTimeEponge, amount_out_eponge * FibonacciTimeEponge/1e6) == true);
         }    
+      return(true);
+    }
+    
+    function issueNFTBond(address _to, uint256 class, uint256 nonce, uint256 _amount, address NFT_address) external override returns(bool){
+        require(contract_is_active == true);
+        require(msg.sender==bank_contract, "ERC659: operator unauthorized");
+        require(_to != address(0), "ERC659: issue bond to the zero address");
+        _issueNfTBond(_to, class, nonce, _amount, NFT_address);
+   
       return(true);
     }
     
