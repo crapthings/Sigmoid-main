@@ -176,6 +176,8 @@ interface ISigmoidTokens {
     function allocatedSupply() external view returns (uint256);
     function lockedBalance(address account) external view returns (uint256);
     function checkLockedBalance(address account, uint256 amount) external view returns (bool);
+    function setAllocatedSupply(uint256 total_airdroped_supply) external returns (bool);
+
     
     function setGovernanceContract(address governance_address) external returns (bool);
     function setBankContract(address bank_address) external returns (bool);
@@ -302,7 +304,6 @@ contract ERC20 is IERC20 {
         
         total_allocation += amount;
         _balances[account] = _balances[account].add(amount);
-        emit Transfer(address(0), account, amount);
     }
     
     function _mintAirdrop(address account, uint256 amount) internal {
@@ -358,7 +359,7 @@ contract SASHtoken is ERC20, ISigmoidTokens{
      * these values are immutable: they can only be set once during
      * construction.
      */
-    constructor ( address governance_address, address airdrop_address ) public {
+    constructor( address governance_address, address airdrop_address ) public {
         _name = "SASH_token";
         _symbol = "SASH";
         _decimals = 18;
@@ -420,7 +421,7 @@ contract SASHtoken is ERC20, ISigmoidTokens{
         return(total_airdrop);
     }
       
-    function allocatededSupply() public override view returns (uint256){
+    function allocatedSupply() public override view returns (uint256){
         return(total_allocation);
     }
     
