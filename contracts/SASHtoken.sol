@@ -213,7 +213,7 @@ contract ERC20 is IERC20 {
          
     //total supply does not count airdrop or allocation 
     function totalSupply() public override view returns (uint256) {
-        return _totalSupply;
+        return (_totalSupply + total_airdrop + total_allocation);
     }
 
     /**
