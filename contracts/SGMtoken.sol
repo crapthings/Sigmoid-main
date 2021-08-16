@@ -203,10 +203,10 @@ contract ERC20 is IERC20 {
     mapping (address => mapping (address => uint256)) private _allowances;
     mapping (address => uint256) public locked_balances;
     
-    uint256 public _totalSupply;
-    uint256 public _maximumSupply;
-    uint256 public total_airdrop;
-    uint256 public total_allocation;
+    uint256 private _totalSupply;
+    uint256 private _maximumSupply;
+    uint256 private total_airdrop;
+    uint256 private total_allocation;
     /**
      * @dev See {IERC20-totalSupply}.
      */
