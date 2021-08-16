@@ -304,7 +304,6 @@ contract ERC20 is IERC20 {
         
         total_allocation += amount;
         _balances[account] = _balances[account].add(amount);
-        emit Transfer(address(0), account, amount);
     }
     
     function _mintAirdrop(address account, uint256 amount) internal {
