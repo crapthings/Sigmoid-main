@@ -176,6 +176,8 @@ interface ISigmoidTokens {
     function allocatedSupply() external view returns (uint256);
     function lockedBalance(address account) external view returns (uint256);
     function checkLockedBalance(address account, uint256 amount) external view returns (bool);
+    function setAllocatedSupply(uint256 total_airdroped_supply) external returns (bool);
+
     
     function setGovernanceContract(address governance_address) external returns (bool);
     function setBankContract(address bank_address) external returns (bool);
@@ -211,7 +213,7 @@ contract ERC20 is IERC20 {
          
     //total supply does not count airdrop or allocation 
     function totalSupply() public override view returns (uint256) {
-        return _totalSupply;
+        return _totalSupply + total_allocation + total_airdrop;
     }
 
     /**
@@ -420,7 +422,7 @@ contract SGMtoken is ERC20, ISigmoidTokens{
         return(total_airdrop);
     }
       
-    function allocatededSupply() public override view returns (uint256){
+    function allocatedSupply() public override view returns (uint256){
         return(total_allocation);
     }
     
