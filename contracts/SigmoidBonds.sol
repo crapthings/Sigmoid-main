@@ -89,6 +89,8 @@ interface IERC659 {
     
     function getBondSymbol(uint256 class) view external returns (string memory);
     function getBondInfo(uint256 class, uint256 nonce) external view returns (string memory BondSymbol, uint256 timestamp, uint256 info2, uint256 info3, uint256 info4, uint256 info5,uint256 info6);
+    function getBondProgress(uint256 class, uint256 nonce) external view returns (uint256, uint256);
+    function getBatchBondProgress(uint256 class, uint256 nonce) external view returns (uint256[] memory, uint256[] memory);
     function bondIsRedeemable(uint256 class, uint256 nonce) external view returns (bool);
     
  
@@ -348,6 +350,48 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
         info4=_info[class][nonce][4];
         info5=_info[class][nonce][5];
         info6=_info[class][nonce][6];
+    }
+    
+    function getBondProgress(uint256 class, uint256 nonce) public override view returns (uint256, uint256){
+        uint256 total_liquidity=last_activeSupply[class];
+        uint256 needed_liquidity=last_activeSupply[class];
+ 
+            for (uint i=last_bond_redeemed[class]; i<=last_bond_nonce[class]; i++) {
+                total_liquidity += _activeSupply[class][i]+_redeemedSupply[class][i];
+                }
+            
+            for (uint i=last_bond_redeemed[class]; i<=nonce; i++) {
+                needed_liquidity += (_activeSupply[class][i]+_redeemedSupply[class][i])*2;
+                }
+                
+            return(total_liquidity,needed_liquidity);
+               
+    }    
+    
+    function getBatchBondProgress(uint256 class, uint256 nonce) public override view returns (uint256[] memory, uint256[] memory){
+       
+        uint256[] memory have = new uint256[](last_bond_nonce[class]);
+        uint256[] memory need = new uint256[](last_bond_nonce[class]);
+            for (uint n = 0; n<last_bond_nonce[class]; n++) {
+                
+                uint256 total_liquidity=last_activeSupply[class];
+                uint256 needed_liquidity=last_activeSupply[class];
+        
+                for (uint i=last_bond_redeemed[class]; i<=last_bond_nonce[class]; i++) {
+                    total_liquidity += _activeSupply[class][i]+_redeemedSupply[class][i];
+                    }
+                
+                for (uint i=last_bond_redeemed[class]; i<=nonce; i++) {
+                    needed_liquidity += (_activeSupply[class][i]+_redeemedSupply[class][i])*2;
+                    }
+                
+                (total_liquidity,needed_liquidity);
+                have[n]=total_liquidity;    
+                need[n]=needed_liquidity;
+            }
+
+        return(have,need);
+               
     }
     
     //check if the bond is redeemable
