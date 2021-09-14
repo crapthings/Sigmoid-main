@@ -174,22 +174,22 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
         _classCreated=[0,1,2,3];
         
         _Symbol[0]="SASH-USD";
-        _Fibonacci_number[0]=8;
+        _Fibonacci_number[0]=7;
         _Fibonacci_epoch[0]=24*60*60;
         _genesis_nonce_time[0]=0;
         
         _Symbol[1]="SGM-SASH";
-        _Fibonacci_number[1]=8;
+        _Fibonacci_number[1]=7;
         _Fibonacci_epoch[1]=24*60*60;
         _genesis_nonce_time[1]=0;
         
         _Symbol[2]="SGM,SGM";
-        _Fibonacci_number[2]=8;
+        _Fibonacci_number[2]=7;
         _Fibonacci_epoch[2]=24*60*60;
         _genesis_nonce_time[2]=0;
         
         _Symbol[3]="SASH,SGM";
-        _Fibonacci_number[3]=8;
+        _Fibonacci_number[3]=7;
         _Fibonacci_epoch[3]=24*60*60;
         _genesis_nonce_time[3]=0;
         
@@ -551,7 +551,7 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
                     FibonacciTimeEponge1=FibonacciTimeEponge;
                 }
             }   
-            require(_issueBond( _to, class, now_nonce + FibonacciTimeEponge, amount_out_eponge * FibonacciTimeEponge/1e6) == true);
+            require(_issueBond( _to, class, (now_nonce + FibonacciTimeEponge) * 6, amount_out_eponge * FibonacciTimeEponge/1e6) == true);
         }    
       return(true);
     }
