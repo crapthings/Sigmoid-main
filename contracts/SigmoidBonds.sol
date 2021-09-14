@@ -89,7 +89,7 @@ interface IERC659 {
     
     function getBondSymbol(uint256 class) view external returns (string memory);
     function getBondInfo(uint256 class, uint256 nonce) external view returns (string memory BondSymbol, uint256 timestamp, uint256 info2, uint256 info3, uint256 info4, uint256 info5,uint256 info6);
-    function getBondProgress(uint256 class, uint256 nonce) external view returns (uint256, uint256);
+    function getBondProgress(uint256 class, uint256 nonce) external view returns (uint256[2] memory);
     function getBatchBondProgress(uint256 class, uint256 nonce) external view returns (uint256[] memory, uint256[] memory);
     function bondIsRedeemable(uint256 class, uint256 nonce) external view returns (bool);
     
@@ -342,6 +342,48 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
         return _Symbol[class]; 
     } 
     
+    function get_factor_P(uint256 class, uint256 nonce) public view returns (uint256 factor_P) {
+        uint256[2] memory needed;
+        needed = getBondProgress(class, nonce);
+        uint256 total_liquidity = needed[0];
+        uint256 total_liquidity_78;
+        uint256 total_liquidity_7;
+        uint256 average_liquidity;
+        if (needed[0]>= needed[1]){
+            return (now);
+            
+        }
+        
+        else{
+            //if the project is just start, then taken only the avarage liquidity of every bond nonces
+            if (last_bond_nonce[class] <= 78){
+                average_liquidity = total_liquidity / last_bond_nonce[class];
+            }
+            
+            else{
+                //the average newly added liquidity of the last 78 nonce
+                
+                for (uint i=last_bond_nonce[class]-78; i<=last_bond_nonce[class]; i++) {
+                    total_liquidity_78 += _activeSupply[class][i]+_redeemedSupply[class][i];
+                    }
+                    
+                for (uint i=last_bond_nonce[class]-7; i<=last_bond_nonce[class]; i++) {
+                    total_liquidity_7 += _activeSupply[class][i]+_redeemedSupply[class][i];
+                    }
+                    
+                //get the average liquidity estimation with standard deviation
+                average_liquidity = total_liquidity / last_bond_nonce[class] * 158 / 1e3
+                                  + total_liquidity_78 / 78 * 682 / 1e3
+                                  + total_liquidity_7 / 7 * 158 / 1e3;
+                }
+        
+            
+          
+            //calculate P from the addtional liquidity needed, the average liquidity and the interval between two bonds 
+            factor_P = needed[1]-needed[0] / average_liquidity * _Fibonacci_epoch[class];
+        }
+    }
+    
     function getBondInfo(uint256 class, uint256 nonce) public override view returns (string memory BondSymbol, uint256 timestamp, uint256 info2, uint256 info3, uint256 info4, uint256 info5, uint256 info6) {
         BondSymbol=_Symbol[class];
         timestamp=_info[class][nonce][1];
@@ -352,7 +394,7 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
         info6=_info[class][nonce][6];
     }
     
-    function getBondProgress(uint256 class, uint256 nonce) public override view returns (uint256, uint256){
+    function getBondProgress(uint256 class, uint256 nonce) public override view returns (uint256[2] memory){
         uint256 total_liquidity=last_activeSupply[class];
         uint256 needed_liquidity=last_activeSupply[class];
  
@@ -364,7 +406,7 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
                 needed_liquidity += (_activeSupply[class][i]+_redeemedSupply[class][i])*2;
                 }
                 
-            return(total_liquidity,needed_liquidity);
+            return [total_liquidity,needed_liquidity];
                
     }    
     
