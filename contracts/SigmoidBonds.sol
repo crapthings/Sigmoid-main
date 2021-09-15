@@ -192,7 +192,8 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
         address _to,
         uint256 class,
         uint256 nonce,
-        uint256 _amount
+        uint256 _amount,
+        uint256 factor_p
     } 
 
     constructor ( address governance_address) public {
@@ -576,7 +577,7 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
     
     }
     
-        function getBondReviewData(
+    function getBondReviewData(
         address _to,
         uint256 class,
         uint256 _amount
@@ -596,8 +597,9 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
         BondStructData[] memory bonds = new BondStructData[](_Fibonacci_number[class]);
         //the second fibonacci numbers calculation issues bonds to user.
         for (uint256 i = 0; i < _Fibonacci_number[class]; i++) { 
-            bonds[i] = BondStructData(_to, class, now_nonce + fibArray[i], (amount_out_eponge * fibArray[i]) / 1e6);
+            bonds[i] = BondStructData(_to, class, now_nonce + fibArray[i], (amount_out_eponge * fibArray[i]) / 1e6, get_factor_P(class, now_nonce + fibArray[i]));
         }
+        
         return bonds;
     }
 
