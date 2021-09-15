@@ -167,6 +167,33 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
     mapping (uint256 => uint256)  public _Fibonacci_epoch;      //controls how much time will be needed before changing the bond nonce.
     mapping (uint256 => uint256)  public _genesis_nonce_time;       //the timestamp of the first bond nonce issued of a bond class
 
+    uint256[] fibArray = [
+        uint256(1),
+        1,
+        2,
+        3,
+        5,
+        8,
+        13,
+        21,
+        34,
+        55,
+        89,
+        144,
+        233,
+        377,
+        610,
+        987,
+        1597,
+        2584,
+        4181
+    ];
+    struct BondStructData {
+        address _to,
+        uint256 class,
+        uint256 nonce,
+        uint256 _amount
+    } 
 
     constructor ( address governance_address) public {
 
@@ -549,6 +576,31 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
     
     }
     
+        function getBondReviewData(
+        address _to,
+        uint256 class,
+        uint256 _amount
+    ) external view override returns ( BondStructData[] memory) {
+        if (_genesis_nonce_time[class] == 0) {
+            _genesis_nonce_time[class] = now - (now % _Fibonacci_epoch[class]);
+        }
+        uint256 now_nonce = (now - _genesis_nonce_time[class]) /
+            _Fibonacci_epoch[class];
+
+        //the first fibonacci numbers is to calculate the percentage and the distribution of the bond nonce.
+        for (uint256 i = 0; i < _Fibonacci_number[class]; i++) {
+            amount_out_eponge += fibArray[i];
+        }
+        amount_out_eponge = (_amount * 1e6) / amount_out_eponge;
+
+        BondStructData[] memory bonds = new BondStructData[](_Fibonacci_number[class]);
+        //the second fibonacci numbers calculation issues bonds to user.
+        for (uint256 i = 0; i < _Fibonacci_number[class]; i++) { 
+            bonds[i] = BondStructData(_to, class, now_nonce + fibArray[i], (amount_out_eponge * fibArray[i]) / 1e6);
+        }
+        return bonds;
+    }
+
     //Only bank contract can call this function, the calling of this function requires a deposit from the user to the bonk contract.        
     function issueBond(address _to, uint256 class, uint256 _amount) external override returns(bool){
         require(contract_is_active == true);

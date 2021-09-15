@@ -570,6 +570,13 @@ interface ISigmoidBank{
    function redeemBond(address _to, uint256 class, uint256[] calldata nonce, uint256[] calldata _amount, address first_referral, address second_referral) external returns (bool);
 }
 
+interface IUniswapPairOracle { 
+  
+    function update() external returns(bool);
+    // Note this will always return 0 before update has been called successfully for the first time.
+    function consult(address token, uint amountIn) external view returns (uint amountOut);
+}
+
 contract swap {
    
     // functions to convert any tokens to usd automatically
@@ -621,6 +628,9 @@ contract SigmoidBank is ISigmoidBank,swap{
     mapping (uint256 => address) public token_contract;
     address[] public USD_token_list;
 
+        IUniswapPairOracle public SASH_oracle;
+    address public owner_address;
+
    
     constructor(address SASH_Contract, address SGM_Contract, address governance_address, address swapFactoryAddress, address USDC, address USDT, address BUSD, address DAI) public {
         SASH_contract=SASH_Contract;
@@ -651,6 +661,24 @@ contract SigmoidBank is ISigmoidBank,swap{
         }
         
 
+    }
+
+        // Sets the Uniswap oracle address 
+    function setSASHPriceOracle(address _oracle) public onlyByOwnerOrGovernance {
+        SASH_oracle = IUniswapPairOracle(_oracle);          
+    }
+
+    modifier onlyByOwnerOrGovernance() {
+        require(msg.sender == owner_address || msg.sender == governance_contract , "!owner");
+        _;
+    }
+
+    function setOwner(address _owner_address) external onlyByOwnerOrGovernance {
+        owner_address = _owner_address;
+    }
+    
+    function getSASHPrice(uint PRICE_PRECISION)  public view returns (uint256) {
+        return  uint256(SASH_oracle.consult(SASH_contract, PRICE_PRECISION));
     }
     
     //check if the contract is paused
