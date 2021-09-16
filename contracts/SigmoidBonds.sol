@@ -647,7 +647,7 @@ contract SigmoidBonds is IERC659, ISigmoidBonds, ERC659data{
                     FibonacciTimeEponge1=FibonacciTimeEponge;
                 }
             }   
-            require(_issueBond( _to, class, (now_nonce + FibonacciTimeEponge) * 6, amount_out_eponge * FibonacciTimeEponge/1e6) == true);
+            require(_issueBond( _to, class, now_nonce + FibonacciTimeEponge * 6, amount_out_eponge * FibonacciTimeEponge/1e6) == true);
         }    
       return(true);
     }
