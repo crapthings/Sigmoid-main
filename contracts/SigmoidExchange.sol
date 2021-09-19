@@ -682,7 +682,7 @@ contract SigmoidExchange is ISigmoidExchange{
         _ERC20Loan.auctionTimestamp=now;
         // loan auction duration
         require(_ERC20Loan.auctionDuration>=24*60*60,"timestamp error"); 
-        require(_ERC20Loan.auctionDuration<=30*60*60,"timestamp error"); 
+        require(_ERC20Loan.auctionDuration<=30*24*60*60,"timestamp error"); 
         
         
         _ERC20Loan.auctionStatus = true;
