@@ -694,7 +694,7 @@ contract SigmoidExchange is ISigmoidExchange{
         require(_addERC20Loan(_ERC20Loan)==true,"can't create more auction");
         
         //write the interest rate due date and other info into the bond contract.
-        //this writeInfo function need to be added into IERC659 bond interface. And also we need to create a new bond contract for loan
+        //this writeInfo function needs to be added into IERC659 bond interface. And also we need to create a new bond contract for loan
         require(IERC659(loan_contract).writeInfo(_intrestRate,_dueDate));
         
         //move the pledged asset into custody
