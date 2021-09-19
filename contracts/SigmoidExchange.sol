@@ -325,13 +325,16 @@ interface ISigmoidExchange{
     struct AUCTION  {
         
         // If auction clossed =false, if ongoing =true
-        bool auctionStatut;
+        bool auctionStatus;
         
         // seller address
         address seller;
         
         // starting price
         uint256 startingPrice;
+                
+        // min price
+        //uint256 endingPrice;
         
         // Auction started at
         uint256 auctionTimestamp;
@@ -342,6 +345,79 @@ interface ISigmoidExchange{
         // bond address of tge auction 
         address bondAddress;
             
+        // Bonds
+        uint256[] bondClass;
+        
+        // Bonds
+        uint256[] bondNonce;
+        
+        // Bonds
+        uint256[] bondAmount;
+        
+    }
+    
+    struct ERC20LOAN  {
+        
+        // If auction clossed =false, if ongoing =true
+        bool auctionStatus;
+        
+        // seller address
+        address seller;
+        
+        // starting price
+        uint256 startingPrice;
+                
+        // min price
+        //uint256 endingPrice;
+        
+        // Auction started at
+        uint256 auctionTimestamp;
+        
+        // Auction duration
+        uint256 auctionDuration;
+        
+        // bond address of tge auction 
+        address bondAddress;
+            
+        uint256 interestRate;
+        
+        uint256 loanDuration;
+        // Bonds
+        uint256[] bondClass;
+        
+        // Bonds
+        uint256[] bondNonce;
+        
+        // Bonds
+        uint256[] bondAmount;
+        
+    }
+    struct ERC721LOAN  {
+        
+        // If auction clossed =false, if ongoing =true
+        bool auctionStatus;
+        
+        // seller address
+        address seller;
+        
+        // starting price
+        uint256 startingPrice;
+                
+        // min price
+        //uint256 endingPrice;
+        
+        // Auction started at
+        uint256 auctionTimestamp;
+        
+        // Auction duration
+        uint256 auctionDuration;
+        
+        // bond address of tge auction 
+        address bondAddress;
+            
+        uint256 interestRate;
+        
+        uint256 loanDuration;
         // Bonds
         uint256[] bondClass;
         
@@ -414,6 +490,10 @@ contract SigmoidExchange is ISigmoidExchange{
     }
     
     AUCTION[] idToCatalogue;
+    ERC20LOAN[] idToERC20Loan;
+       
+       
+    
   
     //governance functions, used to update, pause and set launching phases.
     function isActive(bool _contract_is_active) public override returns (bool){
@@ -464,7 +544,7 @@ contract SigmoidExchange is ISigmoidExchange{
         }
         
         for (uint i=0; i<idToCatalogue.length; i++) {
-            if(idToCatalogue[i].auctionStatut == false){
+            if(idToCatalogue[i].auctionStatus == false){
                 idToCatalogue[i] = _auction;
                 return(true);
             }
@@ -476,7 +556,7 @@ contract SigmoidExchange is ISigmoidExchange{
     }
     
     function _cancelAuction(uint256 _auctionId) private returns(bool) {
-        idToCatalogue[_auctionId].auctionStatut = false;
+        idToCatalogue[_auctionId].auctionStatus = false;
         return(true);
     }
     
@@ -509,6 +589,17 @@ contract SigmoidExchange is ISigmoidExchange{
             ISigmoidTokens(SASH_contract).bankTransfer (_from, dev_address, stampDutySize);
             return(true);
         }
+    }
+        function _addERC20Loan(ERC20LOAN memory _ERC20Loan) private returns(bool) {
+ 
+        //
+    }
+    
+        function _addPledgedERC20Asset( ERC20LOAN memory _ERC20Loan) private returns(bool) {
+        // get the pledged asset ERC20 contract from securitised loan bond contact
+        // move the erc20 asset into custody
+     
+        return(true);
     }
     
     //get a list of auctions
@@ -548,11 +639,10 @@ contract SigmoidExchange is ISigmoidExchange{
     //add a new auction to exchange, deposit the bonds in question into exchange contract
     function addAuction(AUCTION memory _auction) public override returns(bool){
         require(contract_is_active==true,"contract is not active");
-        require(msg.sender==_auction.seller,"operator unauthorized");
         _auction.auctionTimestamp=now;
         require(_auction.auctionDuration>=24*60*60,"timestamp error"); 
-        require(_auction.auctionDuration<=7*24*60*60,"timestamp error"); 
-        _auction.auctionStatut = true;
+        require(_auction.auctionDuration<=24*30*60*60,"timestamp error");
+        _auction.auctionStatus = true;
         
         require(_auction.bondClass.length == _auction.bondNonce.length && _auction.bondNonce.length  == _auction.bondAmount.length,"ERC659:input error");
         require(_addAuction(_auction)==true,"can't create more auction");
@@ -565,7 +655,7 @@ contract SigmoidExchange is ISigmoidExchange{
     function cancelAuction(uint256 _auctionId) public override returns(bool){
         require(msg.sender==idToCatalogue[_auctionId].seller,"operator unauthorized"); 
         
-        require(idToCatalogue[_auctionId].auctionStatut==true,"can't cancel auction");
+        require(idToCatalogue[_auctionId].auctionStatus==true,"can't cancel auction");
         require(_cancelAuction(_auctionId)==true,"can't cancel auction");
         require(_removeCustody(msg.sender,_auctionId)==true,"can't move to custody");
         return(true);
@@ -585,4 +675,31 @@ contract SigmoidExchange is ISigmoidExchange{
         return(true);
     }
     
+    // the frontend will find the loan class of the securitised loan bond, then enter the class with the Auction structure.
+    function createERC20Loan (ERC20LOAN memory _ERC20Loan) public returns(bool){
+        
+        require(contract_is_active==true,"contract is not active");
+        _ERC20Loan.auctionTimestamp=now;
+        // loan auction duration
+        require(_ERC20Loan.auctionDuration>=24*60*60,"timestamp error"); 
+        require(_ERC20Loan.auctionDuration<=30*60*60,"timestamp error"); 
+        
+        
+        _ERC20Loan.auctionStatus = true;
+        //make sure that the length of class nonce and amount is the same
+        require(_ERC20Loan.bondClass.length == _ERC20Loan.bondNonce.length && _ERC20Loan.bondNonce.length  == _ERC20Loan.bondAmount.length,"ERC659:input error");
+        require(_ERC20Loan.bondClass.length == 1,"ERC659:input error");
+        
+        //push _auction to the auction list
+        require(_addERC20Loan(_ERC20Loan)==true,"can't create more auction");
+        
+        //write the interest rate due date and other info into the bond contract.
+        //this writeInfo function need to be added into IERC659 bond interface. And also we need to create a new bond contract for loan
+        require(IERC659(loan_contract).writeInfo(_intrestRate,_dueDate));
+        
+        //move the pledged asset into custody
+        require(_addPledgedERC20Asset(createERC20Loan)==true,"can't move to custody");
+        
+        return(true);
+    }
 }
