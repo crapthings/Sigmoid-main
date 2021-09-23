@@ -718,6 +718,6 @@ contract SigmoidExchange is ISigmoidExchange{
     }
     
     function takeOrder(ERC20LOAN memory _ERC20Loan) public returns (bool) {
-        
+        return(true);
     }
 }
