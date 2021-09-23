@@ -1,0 +1,27 @@
+{
+  "bool auctionStatus":true,
+  "uint256 auctionTimestamp":1632365094255,
+  "address seller":"0x5B38Da6a701c568545dCfcB03FcB875f56beddC4",
+  "uint256 startingPrice":5000,
+  "uint256 auctionDuration":432000,
+  "address bondAddress":"0x5B38Da6a701c568545dCfcB03FcB875f56beddC4",
+  "uint256 interestRate":200,
+  "uint256 loanDuration":432000,
+  "uint256[] bondClass":[1],
+  "uint256[] bondNonce":[1],
+  "uint256[] bondAmount":"[1]",
+}
+_ERC20Loan.auctionStatus = auctionStatus;
+_ERC20Loan.auctionTimestamp = auctionTimestamp;
+_ERC20Loan.seller = seller;
+_ERC20Loan.startingPrice = startingPrice;
+_ERC20Loan.auctionDuration = auctionDuration;
+_ERC20Loan.bondAddress = bondAddress;
+_ERC20Loan.interestRate = interestRate;
+_ERC20Loan.loanDuration = loanDuration;
+_ERC20Loan.bondClass = bondClass;
+_ERC20Loan.bondNonce = bondNonce;
+_ERC20Loan.bondAmount = bondAmount;
+
+
+true, 1632365094255, "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4",5000,432000,"0x5B38Da6a701c568545dCfcB03FcB875f56beddC4",200,432000,[1],[1],[1]
