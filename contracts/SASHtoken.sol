@@ -354,7 +354,7 @@ contract SASHtoken is ERC20, ISigmoidTokens{
     
 
 
-        /**
+    /**
      * @dev Sets the values for `name`, `symbol`, and `decimals`. All three of
      * these values are immutable: they can only be set once during
      * construction.
