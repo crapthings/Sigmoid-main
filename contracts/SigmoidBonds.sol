@@ -83,10 +83,11 @@ interface IERC659 {
         bool auctionStatus;
         // seller address
         address payable seller;
+        address payable buyer;
         // starting price
         uint256 startingPrice;
         // min price
-        //uint256 endingPrice;
+        uint256 endingPrice;
 
         // Auction started at
         uint256 auctionTimestamp;
