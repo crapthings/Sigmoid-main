@@ -78,31 +78,46 @@ library SafeMath {
 }
 
 interface IERC659 {
-    struct ERC20LOAN {
+   struct ERC20LOAN  {
+
         // If auction clossed =false, if ongoing =true
         bool auctionStatus;
+
         // seller address
         address payable seller;
+        
         address payable buyer;
+
+        address tokenAddress;
+
         // starting price
         uint256 startingPrice;
+
         // min price
         uint256 endingPrice;
 
         // Auction started at
         uint256 auctionTimestamp;
+
         // Auction duration
         uint256 auctionDuration;
-        // bond address of tge auction
+
+        // // bond address of tge auction
         address bondAddress;
+
         uint256 interestRate;
+
         uint256 loanDuration;
+        uint256 amount;
         // Bonds
         uint256[] bondClass;
+
         // Bonds
         uint256[] bondNonce;
+
         // Bonds
         uint256[] bondAmount;
+
     }
     struct BondTypes {
         address bondAddress;
@@ -215,57 +230,16 @@ interface IERC659 {
         address NFT_address
     ) external returns (bool);
 
-    function redeemBond(
-        address _from,
-        uint256 class,
-        uint256[] calldata nonce,
-        uint256[] calldata _amount
-    ) external returns (bool);
+    function redeemBond( address _from, uint256 class, uint256[] calldata nonce, uint256[] calldata _amount) external returns (bool);
 
-    function transferBond(
-        address _from,
-        address _to,
-        uint256[] calldata class,
-        uint256[] calldata nonce,
-        uint256[] calldata _amount
-    ) external returns (bool);
+    function transferBond(address _from,address _to,uint256[] calldata class,uint256[] calldata nonce,uint256[] calldata _amount) external returns (bool);
 
-    function burnBond(
-        address _from,
-        uint256[] calldata class,
-        uint256[] calldata nonce,
-        uint256[] calldata _amount
-    ) external returns (bool);
+    function burnBond(address _from,uint256[] calldata class,uint256[] calldata nonce,uint256[] calldata _amount) external returns (bool);
 
-    event eventIssueBond(
-        address _operator,
-        address _to,
-        uint256 class,
-        uint256 nonce,
-        uint256 _amount
-    );
-    event eventRedeemBond(
-        address _operator,
-        address _from,
-        uint256 class,
-        uint256 nonce,
-        uint256 _amount
-    );
-    event eventBurnBond(
-        address _operator,
-        address _from,
-        uint256 class,
-        uint256 nonce,
-        uint256 _amount
-    );
-    event eventTransferBond(
-        address _operator,
-        address _from,
-        address _to,
-        uint256 class,
-        uint256 nonce,
-        uint256 _amount
-    );
+    event eventIssueBond(address _operator,address _to,uint256 class,uint256 nonce,uint256 _amount);
+    event eventRedeemBond(address _operator,address _from,uint256 class,uint256 nonce,uint256 _amount);
+    event eventBurnBond(address _operator,address _from,uint256 class,uint256 nonce,uint256 _amount);
+    event eventTransferBond(address _operator,address _from,address _to,uint256 class,uint256 nonce,uint256 _amount);
 }
 
 interface ISigmoidBonds {
@@ -294,8 +268,7 @@ interface ISigmoidBonds {
 }
 
 contract ERC659data {
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256)))
-        public _balances;
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) public _balances;
 
     mapping(uint256 => mapping(uint256 => uint256)) public _activeSupply;
 
@@ -422,10 +395,7 @@ contract SigmoidBonds is ISigmoidBonds, ERC659data, IERC659 {
     }
 
     function setBankContract(address bank_address) public override returns (bool){
-        require(
-            msg.sender == governance_contract,
-            "ERC659: operator unauthorized"
-        );
+        require(msg.sender == governance_contract,"ERC659: operator unauthorized");
         bank_contract = bank_address;
         return (true);
     }
@@ -941,22 +911,11 @@ contract SigmoidBonds is ISigmoidBonds, ERC659data, IERC659 {
     //transfer a list of bonds. Only bank contract or exchange contract can call this function.
     function transferBond(address _from,address _to,uint256[] calldata class,uint256[] calldata nonce,uint256[] calldata _amount) external override returns (bool) {
         require(contract_is_active == true);
-        require(
-            msg.sender == _from ||
-                (msg.sender == bank_contract ||
-                    msg.sender == exchange_contract),
-            "ERC659: operator unauthorized"
-        );
+        require(msg.sender == _from || (msg.sender == bank_contract || msg.sender == exchange_contract), "ERC659: operator unauthorized");
 
         for (uint256 n = 0; n < nonce.length; n++) {
-            require(
-                _balances[_from][class[n]][nonce[n]] >= _amount[n],
-                "ERC659: not enough bond to transfer"
-            );
-            require(
-                _to != address(0),
-                "ERC659: cant't transfer to zero bond, use 'burnBond()' instead"
-            );
+            require(_balances[_from][class[n]][nonce[n]] >= _amount[n],"ERC659: not enough bond to transfer");
+            require(_to != address(0), "ERC659: cant't transfer to zero bond, use 'burnBond()' instead");
             require(_transferBond(_from, _to, class[n], nonce[n], _amount[n]));
         }
         return (true);
@@ -987,8 +946,7 @@ contract SigmoidBonds is ISigmoidBonds, ERC659data, IERC659 {
         bonds.bondNonce = _bondNonce;
     }
 
-    function writeInfo(ERC20LOAN memory _ERC20Loan) public override returns (bool)
-    {
+    function writeInfo(ERC20LOAN memory _ERC20Loan) public override returns (bool){
         if (bondLib.length == 0) {
             bondLib.push(
                 BondLib({

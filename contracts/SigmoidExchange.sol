@@ -328,7 +328,10 @@ interface ISigmoidExchange{
 
         // seller address
         address payable seller;
+        
         address payable buyer;
+
+        address tokenAddress;
 
         // starting price
         uint256 startingPrice;
@@ -348,7 +351,7 @@ interface ISigmoidExchange{
         uint256 interestRate;
 
         uint256 loanDuration;
-
+        uint256 amount;
         // Bonds
         uint256[] bondClass;
 
@@ -517,8 +520,8 @@ contract SigmoidExchange is ISigmoidExchange{
         return(true);
     }
 
-    function setBondContract(address bond_address)public override returns (bool) {
-        require(msg.sender==governance_contract, "ERC659: operator unauthorized");
+    function setBondContract(address bond_address)public override returns (bool) { 
+        // require(msg.sender==governance_contract, "ERC659: operator unauthorized");
         bond_contract=bond_address;
         return (true);
     }
@@ -614,14 +617,14 @@ contract SigmoidExchange is ISigmoidExchange{
     function _addPledgedERC20Asset( ERC20LOAN memory _ERC20Loan) private returns(bool) {
         // get the pledged asset ERC20 contract from securitised loan bond contact
         // move the erc20 asset into custody
-        require(IERC659(_ERC20Loan.bondAddress).transferBond(_ERC20Loan.seller, address(this), _ERC20Loan.bondClass, _ERC20Loan.bondNonce, _ERC20Loan.bondAmount),"can't move to custody");
+        require(IERC20(_ERC20Loan.tokenAddress).transferFrom(_ERC20Loan.seller, address(this),_ERC20Loan.amount),"can't move to custody");
         return(true);
     }
 
-    function _removePledgedERC20Asset( ERC20LOAN memory _ERC20Loan) private returns(bool) {
+    function _removePledgedERC20Asset(ERC20LOAN memory _ERC20Loan) private returns(bool) {
         // get the pledged asset ERC20 contract from securitised loan bond contact
         // move the erc20 asset into custody
-        require(IERC659(_ERC20Loan.bondAddress).transferBond(address(this), _ERC20Loan.seller, _ERC20Loan.bondClass, _ERC20Loan.bondNonce, _ERC20Loan.bondAmount),"can't move to custody");
+        require(IERC20(address(this)).transfer(_ERC20Loan.seller,   _ERC20Loan.amount),"can't move to custody");
         return(true);
     }
 
@@ -670,7 +673,7 @@ contract SigmoidExchange is ISigmoidExchange{
     }
 
     function getERC20LoanSuccessLen(address payable _seller) view public returns(uint256){
-        uint256 len;
+        uint256 len = 0;
         for (uint256 i = 0;i<idToERC20Loan.length;i++){
             if(idToERC20Loan[i].seller == _seller && idToERC20Loan[i].buyer != address(0)){
               //  auctionList.push(idToERC20Loan);
@@ -774,20 +777,16 @@ contract SigmoidExchange is ISigmoidExchange{
         return(true);
     } 
     // the frontend will find the loan class of the securitised loan bond, then enter the class with the Auction structure.
-    function createERC20Loan (bool _auctionStatus,address payable _seller,uint256 _startingPrice,uint256 _endingPrice,uint256 _auctionDuration,address _bondAddress,uint256 _interestRate,uint256 _loanDuration,uint256[] memory _bondClass,uint256[] memory _bondNonce,uint256[] memory _bondAmount) public returns(bool){
+    function createERC20Loan (address payable _seller,uint256 _startingPrice,uint256 _endingPrice,uint256 _auctionDuration,uint256 _interestRate,uint256 _loanDuration,uint256 _amount,address _tokenAddress) public returns(bool){
         ERC20LOAN memory _ERC20Loan;
-        _ERC20Loan.auctionStatus = _auctionStatus;
         _ERC20Loan.seller = _seller;
         _ERC20Loan.startingPrice = _startingPrice;
         _ERC20Loan.endingPrice = _endingPrice;
-        _ERC20Loan.auctionTimestamp = now;
         _ERC20Loan.auctionDuration = _auctionDuration;
-        _ERC20Loan.bondAddress = _bondAddress;
         _ERC20Loan.interestRate = _interestRate;
         _ERC20Loan.loanDuration = _loanDuration;
-        _ERC20Loan.bondClass = _bondClass;
-        _ERC20Loan.bondNonce = _bondNonce;
-        _ERC20Loan.bondAmount = _bondAmount;
+        _ERC20Loan.amount = _amount;
+        _ERC20Loan.tokenAddress = _tokenAddress;
         
 
         require(contract_is_active==true,"contract is not active");
@@ -799,8 +798,8 @@ contract SigmoidExchange is ISigmoidExchange{
 
         _ERC20Loan.auctionStatus = true;
         //make sure that the length of class nonce and amount is the same
-        require(_ERC20Loan.bondClass.length == _ERC20Loan.bondNonce.length && _ERC20Loan.bondNonce.length  == _ERC20Loan.bondAmount.length,"ERC659:input error");
-        require(_ERC20Loan.bondClass.length == 1,"ERC659:input error");
+        // require(_ERC20Loan.bondClass.length == _ERC20Loan.bondNonce.length && _ERC20Loan.bondNonce.length  == _ERC20Loan.bondAmount.length,"ERC659:input error");
+        // require(_ERC20Loan.bondClass.length == 1,"ERC659:input error");
 
         //push _auction to the auction list
         require(_addERC20Loan(_ERC20Loan)==true,"can't create more auction");
@@ -826,47 +825,64 @@ contract SigmoidExchange is ISigmoidExchange{
         _to.transfer(_amount);
     }
 
-    function takeOrder(ERC20LOAN memory _ERC20Loan) public returns (bool) {
-        _ERC20Loan.auctionStatus = false;
-        // bondLib 
-        IERC659(bond_contract).writeInfo(_ERC20Loan);
+    function takeOrder(
+        address payable _seller,uint256 _startingPrice,uint256 _endingPrice,uint256 _auctionDuration,uint256 _interestRate,uint256 _loanDuration,uint256 _amount,address _tokenAddress
+        ) public returns (bool) {
+        ERC20LOAN memory _ERC20Loan;
+        _ERC20Loan.seller = _seller;
+        _ERC20Loan.amount = _amount;
+        _ERC20Loan.startingPrice = _startingPrice;
+        _ERC20Loan.endingPrice = _endingPrice;
+        _ERC20Loan.auctionDuration = _auctionDuration;
+        _ERC20Loan.interestRate = _interestRate;
+        _ERC20Loan.loanDuration = _loanDuration;
+        _ERC20Loan.tokenAddress = _tokenAddress;
+        _ERC20Loan.auctionTimestamp = now;
         for (uint256 i = 0; i < idToERC20Loan.length; i++) {
             if (idToERC20Loan[i].seller == _ERC20Loan.seller) {
                 idToERC20Loan[i].auctionStatus = false;
                 _ERC20Loan.buyer = msg.sender;
-        // IERC20
-        IERC20(SASH_contract).approve(address(this), getERC20LoanBidPrice(i) );
-        IERC20(SASH_contract).transferFrom(msg.sender, _ERC20Loan.seller, getERC20LoanBidPrice(i));
+                // _ERC20Loan.tokenAddress = SASH_contract;
+                // bondLib 
+                IERC659(bond_contract).writeInfo(_ERC20Loan);
+                // IERC20
+                // IERC20(SASH_contract).approve(address(this), getERC20LoanBidPrice(i) );
+                IERC20(SASH_contract).transferFrom(msg.sender, _ERC20Loan.seller, getERC20LoanBidPrice(i));
                 break;
             }
         }
         
         return(true);
     }
-    function handleRepay(bool _auctionStatus,address payable _seller,address payable _buyer,uint256 _startingPrice,uint256 _endingPrice,uint256 _auctionTimestamp,uint256 _auctionDuration,address _bondAddress,uint256 _interestRate,uint256 _loanDuration,uint256[] memory _bondClass,uint256[] memory _bondNonce,uint256[] memory _bondAmount ) public returns(bool){
+
+    function handleRepay(bool _auctionStatus,address payable _seller,address payable _buyer,uint256 _startingPrice,uint256 _endingPrice,uint256 _auctionDuration,uint256 _interestRate,uint256 _loanDuration,address _tokenAddress, uint256 _amount ) public returns(bool){
         ERC20LOAN memory _ERC20Loan;
         _ERC20Loan.auctionStatus = _auctionStatus;
         _ERC20Loan.seller = _seller;
         _ERC20Loan.buyer = _buyer;
         _ERC20Loan.startingPrice = _startingPrice;
         _ERC20Loan.endingPrice = _endingPrice;
-        _ERC20Loan.auctionTimestamp = _auctionTimestamp;
+        _ERC20Loan.auctionTimestamp = now;
         _ERC20Loan.auctionDuration = _auctionDuration;
-        _ERC20Loan.bondAddress = _bondAddress;
         _ERC20Loan.interestRate = _interestRate;
         _ERC20Loan.loanDuration = _loanDuration;
-        _ERC20Loan.bondClass = _bondClass;
-        _ERC20Loan.bondNonce = _bondNonce;
-        _ERC20Loan.bondAmount = _bondAmount;
+        _ERC20Loan.amount = _amount;
+        _ERC20Loan.tokenAddress = _tokenAddress;
 
+
+        require(contract_is_active==true,"contract is not active");
+        
 
 
         uint256 allAmount = ((_ERC20Loan.interestRate / 100 ) * getNowBidPrice(_ERC20Loan)) + getNowBidPrice(_ERC20Loan);
         // 
         require(_removePledgedERC20Asset(_ERC20Loan)==true);
 
-        IERC20(bond_contract).approve(_ERC20Loan.seller, allAmount);
-        IERC20(bond_contract).transferFrom(address(this), _ERC20Loan.buyer, allAmount);
+        // IERC20(bond_contract).approve(_ERC20Loan.seller, allAmount);
+        // IERC20()
+        IERC20(SASH_contract).transferFrom(msg.sender, address(this), allAmount);
+        IERC20(_tokenAddress).transferFrom(address(this), _ERC20Loan.seller, _amount);
+        IERC20(SASH_contract).transferFrom(address(this), _ERC20Loan.buyer, allAmount);
 
         return(true);
     }
